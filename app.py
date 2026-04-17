@@ -1356,7 +1356,17 @@ hr.chapter::after { content: none; }
     line-height: 1.3;
 }
 
-/* ═══════════════ CINEMATIC BOOT — runs once per page mount ═══════════════ */
+/* Reveal body after PREMIUM_CSS parses — overrides pre-hide from earlier inline style. */
+body { opacity: 1; transition: opacity 0.18s ease-out; }
+</style>
+"""
+
+# ═══════════════════════════════════════════════════════════
+# BOOT ANIMATION CSS — injected only on first render of a session.
+# Prevents animations replaying on every Streamlit rerun (button clicks etc).
+# ═══════════════════════════════════════════════════════════
+BOOT_ANIMATION_CSS = """
+<style>
 @keyframes boot-rise {
     0%   { opacity: 0; transform: translateY(28px) scale(0.96); }
     100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -1393,9 +1403,6 @@ hr.chapter::after { content: none; }
 .mcp-strip {
     animation: boot-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.95s both;
 }
-
-/* Reveal body after PREMIUM_CSS parses — overrides pre-hide from earlier inline style. */
-body { opacity: 1; transition: opacity 0.18s ease-out; }
 </style>
 """
 
@@ -1410,6 +1417,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(PREMIUM_CSS, unsafe_allow_html=True)
+
+# Boot animations only on fresh page mount — not on every Streamlit rerun (button clicks).
+# Session state persists per tab; fresh Ctrl+R creates a new session → animation replays.
+if not st.session_state.get("_boot_animated"):
+    st.session_state._boot_animated = True
+    st.markdown(BOOT_ANIMATION_CSS, unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════
