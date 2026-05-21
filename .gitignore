@@ -14,6 +14,11 @@ Thumbs.db
 # Personal config — users copy config.example.py to config.py and edit locally
 config.py
 
+# Google OAuth secrets — never commit
+credentials.json
+token.json
+data/bookkeeping.json
+
 # Internal dev docs
 DESIGN.md
 HANDOFF.md

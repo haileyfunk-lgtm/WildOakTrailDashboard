@@ -29,8 +29,11 @@ from config import (
     SESSION_META_DIR,
     CLAUDE_PLAN,
 )
+from data_sources import load_bookkeeping
+import shopify_data
+import plotly.graph_objects as go
 
-st.set_page_config(page_title="Agentic OS", page_icon="◆", layout="wide")
+st.set_page_config(page_title="Hailey's Hub", page_icon="◆", layout="wide")
 
 # ═══════════════════════════════════════════════════════════
 # GLOBAL RUNTIME (shared across reruns, lives in module scope)
@@ -79,24 +82,29 @@ def reset_runtime():
 
 PREMIUM_CSS = r"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,400;0,500;1,400;1,500&display=swap');
 
 :root {
-    --bg:         #0e0f10;
-    --bg-elev:    #141516;
-    --bg-card:    #1c1b19;
-    --bg-card-hi: #222120;
-    --ring-soft:  rgba(209, 207, 197, 0.18);
-    --ring-mid:   rgba(209, 207, 197, 0.30);
-    --ring-hard:  #b0aea5;
-    --fg:         #faf9f5;
-    --fg-dim:     #b0aea5;
-    --fg-mute:    #87867f;
-    --accent:     #c96442;
-    --accent-soft: rgba(201, 100, 66, 0.12);
-    --warn:       #d9a566;
-    --danger:     #b53333;
-    --good:       #8fb97a;
+    --bg:         #fde8f1;
+    --bg-elev:    #ffffff;
+    --bg-card:    #ffffff;
+    --bg-card-hi: #fff5fa;
+    --ink-deep:   #3d2a4f;          /* soft aubergine — used sparingly */
+    --ring-soft:  rgba(26, 26, 46, 0.09);
+    --ring-mid:   rgba(26, 26, 46, 0.18);
+    --ring-hard:  #1a1a2e;
+    --fg:         #1a1a2e;
+    --fg-dim:     #4a4a60;
+    --fg-mute:    #6f6f85;
+    --accent:     #ec1e79;          /* hot magenta — primary */
+    --accent-soft: rgba(236, 30, 121, 0.10);
+    --accent-2:   #21c9e8;          /* cyan */
+    --accent-3:   #a4e635;          /* lime */
+    --accent-4:   #ffd633;          /* yellow */
+    --accent-5:   #8b4cd6;          /* purple */
+    --warn:       #ff9d3a;
+    --danger:     #ff4d6d;          /* coral pink */
+    --good:       #a4e635;          /* lime */
 
     /* legacy aliases (keep existing class selectors resolving) */
     --text:          var(--fg);
@@ -106,21 +114,29 @@ PREMIUM_CSS = r"""
     --border-strong: var(--ring-mid);
     --ring-warm:     var(--ring-soft);
     --ring-deep:     var(--ring-mid);
-    --accent-glow:   rgba(201, 100, 66, 0.32);
-    --coral:         #d97757;
+    --accent-glow:   rgba(236, 30, 121, 0.22);
+    --coral:         #ff4d6d;
     --amber:         var(--warn);
 }
 
 html, body, [class*="css"] {
-    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     color: var(--fg);
 }
 
-.stApp { background: var(--bg); }
-body   { background: var(--bg); }
+.stApp {
+    background:
+        linear-gradient(135deg,
+            #fde8f1 0%,
+            #e8f4ff 35%,
+            #fff8e7 65%,
+            #ebf9ee 100%);
+    background-attachment: fixed;
+}
+body { background: var(--bg); }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-weight: 500;
     letter-spacing: 0.02em;
     color: var(--fg);
@@ -128,7 +144,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .hero-title {
-    font-family: 'JetBrains Mono', monospace !important;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
     font-size: 2.8rem !important;
     font-weight: 600;
     letter-spacing: 0.05em;
@@ -146,7 +162,7 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     margin-left: 0;
 }
-.hero-title .hero-word { display: inline-block; }
+.hero-title .hero-word { display: inline-block; color: var(--fg); }
 
 .title-row {
     display: flex;
@@ -198,8 +214,54 @@ h1, h2, h3, h4, h5, h6 {
     to   { background-position: -168px 0; }
 }
 
+/* Pixel mascot rows — Star Wars trio on left, LOTR trio on right of title. */
+.mascot-pair {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    vertical-align: middle;
+    margin: 0 0.6rem;
+}
+.tree-mascot {
+    display: inline-block;
+    width: 36px;
+    height: 56px;
+    vertical-align: middle;
+    transform-origin: bottom center;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;
+    transform: translateY(-4px);
+}
+.mascot-pair .tree-mascot:nth-child(3n+1) {
+    animation: mascot-sway-a 3.0s ease-in-out infinite;
+}
+.mascot-pair .tree-mascot:nth-child(3n+2) {
+    animation: mascot-sway-b 3.0s ease-in-out infinite;
+    animation-delay: -1s;
+}
+.mascot-pair .tree-mascot:nth-child(3n+3) {
+    animation: mascot-sway-a 3.0s ease-in-out infinite;
+    animation-delay: -2s;
+}
+.tree-mascot:hover {
+    animation: tree-bounce 0.55s ease-in-out infinite !important;
+}
+@keyframes mascot-sway-a {
+    0%, 100% { transform: translateY(-4px) rotate(-2deg); }
+    50%      { transform: translateY(-4px) rotate(2deg); }
+}
+@keyframes mascot-sway-b {
+    0%, 100% { transform: translateY(-4px) rotate(2deg); }
+    50%      { transform: translateY(-4px) rotate(-2deg); }
+}
+@keyframes tree-bounce {
+    0%, 100% { transform: translateY(-4px) rotate(-3deg); }
+    50%      { transform: translateY(-7px) rotate(3deg); }
+}
+
 .caption-mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.62rem;
     color: var(--fg-mute);
     letter-spacing: 0.08em;
@@ -221,7 +283,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .cat-label, .chip-cat, .cpt-cat {
     color: var(--accent);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.62rem;
     letter-spacing: 0.2em;
     font-weight: 500;
@@ -259,7 +321,7 @@ h1, h2, h3, h4, h5, h6 {
     border: none;
     border-radius: 2px;
     padding: 0.4rem 0.7rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-weight: 500;
     font-size: 0.66rem;
     letter-spacing: 0.08em;
@@ -286,9 +348,9 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.72rem;
 }
 .stTextArea textarea {
-    font-family: 'JetBrains Mono', monospace !important;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
     font-size: 0.82rem !important;
-    background: #1c1b19 !important;
+    background: var(--bg-card) !important;
     color: var(--fg) !important;
     border: none !important;
     border-radius: 3px !important;
@@ -296,23 +358,21 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0.75rem 0.9rem !important;
     box-shadow:
         0 0 0 1px var(--ring-mid),
-        inset 0 1px 0 rgba(255, 255, 255, 0.03),
-        0 6px 20px rgba(0, 0, 0, 0.35) !important;
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 2px 6px rgba(42, 40, 38, 0.05) !important;
     transition: box-shadow 0.15s ease !important;
 }
 .stTextArea textarea:hover {
     box-shadow:
-        0 0 0 1px rgba(201, 100, 66, 0.45),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04),
-        0 6px 22px rgba(0, 0, 0, 0.4) !important;
+        0 0 0 1px rgba(201, 100, 66, 0.40),
+        0 4px 14px rgba(42, 40, 38, 0.08) !important;
 }
 .stTextArea textarea:focus {
-    background: #201e1c !important;
+    background: var(--bg-card) !important;
     box-shadow:
         0 0 0 1px var(--accent),
-        0 0 0 4px rgba(201, 100, 66, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04),
-        0 8px 28px rgba(0, 0, 0, 0.45) !important;
+        0 0 0 4px rgba(201, 100, 66, 0.10),
+        0 6px 18px rgba(42, 40, 38, 0.10) !important;
     outline: none !important;
 }
 
@@ -320,14 +380,14 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--bg-card);
     color: var(--fg-dim);
     border: none;
-    border-radius: 2px;
-    padding: 0.5rem 0.7rem;
-    font-family: 'JetBrains Mono', monospace;
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-weight: 500;
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    transition: box-shadow 0.12s, color 0.12s;
+    transition: box-shadow 0.12s, color 0.12s, transform 0.12s;
     text-align: left;
     height: auto;
     white-space: normal;
@@ -353,7 +413,7 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--fg);
     border: none;
     border-radius: 3px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.8rem;
     padding: 0.5rem 0.75rem;
     box-shadow: 0 0 0 1px var(--ring-soft);
@@ -365,7 +425,7 @@ h1, h2, h3, h4, h5, h6 {
 .stTextInput > div > div > input::placeholder { color: var(--fg-mute); }
 
 pre, code, [data-testid="stCodeBlock"] {
-    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace !important;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
     font-size: 0.76rem !important;
     background: var(--bg-elev) !important;
     border: none !important;
@@ -406,6 +466,25 @@ hr.chapter::after { content: none; }
     box-shadow: 0 0 0 1px var(--accent);
     animation: hero-pulse 2.4s ease-in-out infinite;
 }
+.hero-card.running .hero-headline,
+.hero-card.running .hero-label,
+.hero-card.running .phase-line {
+    color: #1a1a2e !important;
+    opacity: 1 !important;
+}
+.hero-card.running .stream-output,
+.hero-card.running pre.stream-output,
+.hero-card.running pre.stream-output * {
+    color: #000000 !important;
+    opacity: 1 !important;
+    -webkit-text-fill-color: #000000 !important;
+    background: #ffffff !important;
+    text-shadow: none !important;
+    filter: none !important;
+}
+.hero-card.running .phase-line .phase-name {
+    color: var(--accent) !important;
+}
 .hero-card.error {
     background: rgba(181, 51, 51, 0.05);
     box-shadow: 0 0 0 1px rgba(181, 51, 51, 0.55);
@@ -417,7 +496,7 @@ hr.chapter::after { content: none; }
     border: none;
     border-radius: 2px;
     padding: 0.55rem 0.75rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.72rem;
     color: #e8b8b8;
     box-shadow: 0 0 0 1px rgba(181, 51, 51, 0.35);
@@ -429,14 +508,14 @@ hr.chapter::after { content: none; }
     line-height: 1.5;
 }
 .error-hint {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.62rem;
     color: var(--fg-mute);
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 .skill-desc {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.62rem;
     color: var(--fg-mute);
     margin: -0.1rem 0 0.4rem 0.1rem;
@@ -450,7 +529,7 @@ hr.chapter::after { content: none; }
 }
 
 .hero-label {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.62rem;
     text-transform: uppercase;
     letter-spacing: 0.15em;
@@ -458,7 +537,7 @@ hr.chapter::after { content: none; }
     margin-bottom: 0.3rem;
 }
 .hero-headline {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.95rem;
     font-weight: 500;
     color: var(--fg);
@@ -472,7 +551,7 @@ hr.chapter::after { content: none; }
 .cursor-blink {
     display: inline-block;
     color: var(--accent);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-weight: 400;
     margin-left: 0.35rem;
     line-height: 1;
@@ -514,7 +593,7 @@ hr.chapter::after { content: none; }
     background: transparent;
     border: none;
     border-radius: 2px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.62rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -540,7 +619,7 @@ hr.chapter::after { content: none; }
     border-radius: 3px;
     padding: 0.6rem 0.8rem;
     box-shadow: 0 0 0 1px var(--ring-soft);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.74rem;
     color: var(--fg-dim);
     max-height: 500px;
@@ -548,7 +627,7 @@ hr.chapter::after { content: none; }
     line-height: 1.6;
 }
 .activity-feed h1, .activity-feed h2, .activity-feed h3 {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     color: var(--fg);
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -559,7 +638,7 @@ hr.chapter::after { content: none; }
 .obsidian-link, .meta-link {
     display: inline-block;
     color: var(--accent);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.66rem;
     text-decoration: none;
     padding: 0.25rem 0.55rem;
@@ -598,7 +677,7 @@ hr.chapter::after { content: none; }
     border: none;
     border-radius: 3px;
     padding: 0.7rem 0.9rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.72rem;
     color: var(--fg-dim);
     box-shadow: 0 0 0 1px var(--ring-soft);
@@ -611,40 +690,147 @@ hr.chapter::after { content: none; }
     letter-spacing: 0.005em;
 }
 
+/* Expander styling — used for SEO/AEO Pulse and other collapsible sections */
+[data-testid="stExpander"] {
+    background: var(--bg-card);
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px var(--ring-soft);
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+[data-testid="stExpander"] details > summary {
+    color: var(--fg) !important;
+    background: rgba(33, 201, 232, 0.18) !important;   /* soft cyan */
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 0.72rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
+    padding: 0.55rem 0.85rem !important;
+    border-radius: 4px 4px 0 0 !important;
+}
+[data-testid="stExpander"] details > summary:hover {
+    background: rgba(33, 201, 232, 0.32) !important;
+    color: var(--fg) !important;
+}
+[data-testid="stExpander"] details[open] > summary {
+    border-radius: 4px 4px 0 0 !important;
+    border-bottom: 1px solid rgba(33, 201, 232, 0.35) !important;
+}
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] *,
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] {
+    color: var(--fg) !important;
+}
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] h1,
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] h2,
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] h3,
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] h4 {
+    color: var(--fg) !important;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    margin-top: 0.9rem !important;
+    margin-bottom: 0.4rem !important;
+}
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] a {
+    color: var(--accent) !important;
+    text-decoration: underline;
+}
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] strong {
+    color: var(--fg) !important;
+    font-weight: 600;
+}
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] li {
+    color: var(--fg) !important;
+    line-height: 1.6;
+    font-size: 0.85rem;
+    margin-bottom: 0.35rem;
+}
+
 /* Body-copy treatment for rendered markdown output (cockpit mono) */
 .output-body + [data-testid="stMarkdownContainer"] p,
-.output-body ~ [data-testid="stMarkdownContainer"] p {
+.output-body ~ [data-testid="stMarkdownContainer"] p,
+.output-body + [data-testid="stMarkdownContainer"] *,
+.output-body ~ [data-testid="stMarkdownContainer"] *,
+.output-body + [data-testid="stMarkdownContainer"] td,
+.output-body ~ [data-testid="stMarkdownContainer"] td,
+.output-body + [data-testid="stMarkdownContainer"] th,
+.output-body ~ [data-testid="stMarkdownContainer"] th {
     line-height: 1.55;
     font-size: 0.82rem;
-    color: var(--fg);
-    font-family: 'JetBrains Mono', monospace;
+    color: #1a1a2e !important;
+    -webkit-text-fill-color: #1a1a2e !important;
+    opacity: 1 !important;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+}
+
+/* AGGRESSIVE override: force all rendered markdown text dark wherever it lives.
+   Needed because Streamlit nests stMarkdownContainer deeper than the .output-body
+   sibling selectors can reach. */
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stMarkdownContainer"] td,
+[data-testid="stMarkdownContainer"] th,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3,
+[data-testid="stMarkdownContainer"] h4,
+[data-testid="stMarkdownContainer"] h5,
+[data-testid="stMarkdownContainer"] strong,
+[data-testid="stMarkdownContainer"] em,
+[data-testid="stMarkdownContainer"] code,
+[data-testid="stMarkdownContainer"] blockquote,
+[data-testid="stMarkdownContainer"] ul,
+[data-testid="stMarkdownContainer"] ol {
+    color: #1a1a2e !important;
+    -webkit-text-fill-color: #1a1a2e !important;
+    opacity: 1 !important;
+}
+[data-testid="stMarkdownContainer"] a {
+    color: #ec1e79 !important;
+    -webkit-text-fill-color: #ec1e79 !important;
+    opacity: 1 !important;
 }
 .output-body + [data-testid="stMarkdownContainer"] h1,
 .output-body + [data-testid="stMarkdownContainer"] h2,
-.output-body + [data-testid="stMarkdownContainer"] h3 {
-    font-family: 'JetBrains Mono', monospace;
+.output-body + [data-testid="stMarkdownContainer"] h3,
+.output-body ~ [data-testid="stMarkdownContainer"] h1,
+.output-body ~ [data-testid="stMarkdownContainer"] h2,
+.output-body ~ [data-testid="stMarkdownContainer"] h3 {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--fg-dim);
+    color: #1a1a2e !important;
+    -webkit-text-fill-color: #1a1a2e !important;
     margin-top: 1rem;
     margin-bottom: 0.4rem;
 }
-.output-body + [data-testid="stMarkdownContainer"] li {
+.output-body + [data-testid="stMarkdownContainer"] li,
+.output-body ~ [data-testid="stMarkdownContainer"] li {
     line-height: 1.5;
     margin-bottom: 0.25rem;
-    font-family: 'JetBrains Mono', monospace;
+    color: #1a1a2e !important;
+    -webkit-text-fill-color: #1a1a2e !important;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
 }
-.output-body + [data-testid="stMarkdownContainer"] blockquote {
+.output-body + [data-testid="stMarkdownContainer"] a,
+.output-body ~ [data-testid="stMarkdownContainer"] a {
+    color: var(--accent) !important;
+    -webkit-text-fill-color: var(--accent) !important;
+}
+.output-body + [data-testid="stMarkdownContainer"] blockquote,
+.output-body ~ [data-testid="stMarkdownContainer"] blockquote {
     border-left: 2px solid var(--accent);
     padding-left: 0.8rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-style: normal;
-    color: var(--fg-dim);
+    color: #1a1a2e !important;
     margin: 0.7rem 0;
 }
 
 .phase-line {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.68rem;
     color: var(--fg-dim);
     margin-top: 0.4rem;
@@ -653,7 +839,7 @@ hr.chapter::after { content: none; }
 .phase-line .phase-name { color: var(--accent); }
 
 .meta-row {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.66rem;
     color: var(--fg-mute);
     margin-top: 0.5rem;
@@ -692,13 +878,13 @@ hr.chapter::after { content: none; }
 }
 .run-row:first-child { border-top: none; }
 .run-row .run-time {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.62rem;
     color: var(--fg-mute);
     letter-spacing: 0.04em;
 }
 .run-row .run-label {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.76rem;
     font-weight: 500;
     letter-spacing: 0.02em;
@@ -711,7 +897,7 @@ hr.chapter::after { content: none; }
 }
 .run-row:hover .run-label { color: var(--accent); }
 .run-row a {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.6rem;
     color: var(--fg-mute);
     text-decoration: none;
@@ -730,14 +916,14 @@ hr.chapter::after { content: none; }
     box-shadow: 0 0 0 1px var(--ring-soft);
 }
 .approval-card h4 {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.8rem;
     margin: 0 0 0.3rem 0;
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 .approval-card .approval-meta {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.64rem;
     color: var(--fg-mute);
     letter-spacing: 0.06em;
@@ -772,7 +958,7 @@ hr.chapter::after { content: none; }
     background: transparent;
     border: none;
     border-radius: 2px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.66rem;
     font-weight: 500;
     color: var(--fg-dim);
@@ -788,7 +974,7 @@ hr.chapter::after { content: none; }
     box-shadow: 0 0 0 1px var(--accent);
 }
 .quicknav a em, .quicknav .qn-icon {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-style: normal;
     font-weight: 500;
     color: var(--accent);
@@ -843,7 +1029,7 @@ hr.chapter::after { content: none; }
 }
 .metric-tile::before { content: none; }
 .metric-label {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.58rem;
     text-transform: uppercase;
     letter-spacing: 0.15em;
@@ -851,7 +1037,7 @@ hr.chapter::after { content: none; }
     margin-bottom: 0.3rem;
 }
 .metric-value {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 1.1rem;
     font-weight: 500;
     color: var(--fg);
@@ -879,7 +1065,7 @@ hr.chapter::after { content: none; }
     box-shadow: 0 0 0 1px var(--ring-soft);
 }
 .mcp-label {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.58rem;
     text-transform: uppercase;
     letter-spacing: 0.22em;
@@ -892,7 +1078,7 @@ hr.chapter::after { content: none; }
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.66rem;
     font-weight: 500;
     color: var(--fg-dim);
@@ -952,7 +1138,7 @@ hr.chapter::after { content: none; }
     margin-top: 0.6rem;
 }
 .chart-title, .cpt-chart-title {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.66rem;
     font-weight: 500;
     text-transform: uppercase;
@@ -964,7 +1150,7 @@ hr.chapter::after { content: none; }
     align-items: baseline;
 }
 .chart-title em, .cpt-chart-title em {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-style: normal;
     font-weight: 500;
     color: var(--accent);
@@ -1010,7 +1196,7 @@ hr.chapter::after { content: none; }
     display: flex;
     justify-content: space-between;
     padding: 0.25rem 0.1rem 0.15rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.56rem;
     color: var(--fg-mute);
     letter-spacing: 0.1em;
@@ -1035,7 +1221,7 @@ hr.chapter::after { content: none; }
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.58rem;
     text-transform: uppercase;
     letter-spacing: 0.15em;
@@ -1073,7 +1259,7 @@ hr.chapter::after { content: none; }
     display: flex;
     align-items: baseline;
     gap: 0.3rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.9rem;
     letter-spacing: 0.02em;
     color: var(--fg);
@@ -1081,10 +1267,10 @@ hr.chapter::after { content: none; }
 .gauge-max, .cpt-gauge-max {
     font-size: 0.7rem;
     color: var(--fg-mute);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
 }
 .gauge-sub, .cpt-gauge-sub {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.6rem;
     color: var(--fg-mute);
     margin-left: auto;
@@ -1092,7 +1278,7 @@ hr.chapter::after { content: none; }
     text-transform: uppercase;
 }
 .gauge-delta, .cpt-gauge-delta {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.58rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1118,7 +1304,7 @@ hr.chapter::after { content: none; }
     box-shadow: 0 0 0 1px var(--ring-soft);
 }
 .cpt-forecast-head {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.78rem;
     color: var(--fg);
     text-transform: uppercase;
@@ -1130,7 +1316,7 @@ hr.chapter::after { content: none; }
 }
 .cpt-forecast-head em { font-style: normal; color: var(--accent); }
 .cpt-forecast-sub {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.58rem;
     color: var(--fg-mute);
     letter-spacing: 0.08em;
@@ -1166,7 +1352,7 @@ hr.chapter::after { content: none; }
 .cpt-forecast-legend {
     display: flex;
     gap: 0.9rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.56rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1189,7 +1375,7 @@ hr.chapter::after { content: none; }
     grid-template-columns: 3.2rem 1fr auto;
     align-items: baseline;
     column-gap: 0.6rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-size: 0.66rem;
     letter-spacing: 0.04em;
 }
@@ -1233,7 +1419,7 @@ hr.chapter::after { content: none; }
     align-items: center;
     padding: 0.35rem 0.1rem;
     border-top: 1px solid var(--ring-soft);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
 }
 .cpt-pulse:first-of-type { border-top: none; }
 .cpt-pulse-main { min-width: 0; }
@@ -1305,8 +1491,8 @@ hr.chapter::after { content: none; }
 .cpt-skill-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.45rem;
-    margin: 0 0 0.55rem 0;
+    gap: 0.55rem;
+    margin: 0 0 0.7rem 0;
 }
 @media (max-width: 1100px) {
     .cpt-skill-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1317,43 +1503,48 @@ hr.chapter::after { content: none; }
 .cpt-skill {
     background: var(--bg-card);
     box-shadow: 0 0 0 1px var(--ring-soft);
-    border-radius: 2px;
-    padding: 0.45rem 0.6rem;
-    font-family: 'JetBrains Mono', monospace;
+    border-radius: 10px;
+    padding: 0.7rem 0.85rem;
+    min-height: 4.6rem;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     text-align: left;
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    gap: 0.12rem;
-    transition: box-shadow 0.12s, color 0.12s;
+    gap: 0.3rem;
+    transition: box-shadow 0.14s, transform 0.14s, color 0.14s;
     text-decoration: none !important;
     color: inherit;
     min-width: 0;
 }
 .cpt-skill:hover {
-    box-shadow: 0 0 0 1px var(--accent);
+    box-shadow: 0 0 0 1.5px var(--accent);
+    transform: translateY(-1px);
     text-decoration: none !important;
 }
-.cpt-skill.loaded { box-shadow: 0 0 0 1px var(--accent); }
+.cpt-skill.loaded { box-shadow: 0 0 0 1.5px var(--accent); }
 .cpt-skill-name {
     color: var(--fg);
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 500;
+    letter-spacing: 0.06em;
+    font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .cpt-skill:hover .cpt-skill-name { color: var(--accent); }
 .cpt-skill-desc {
-    color: var(--fg-mute);
-    font-size: 0.6rem;
-    letter-spacing: 0.02em;
+    color: var(--fg-dim);
+    font-size: 0.72rem;
+    letter-spacing: 0.01em;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    line-height: 1.3;
+    white-space: normal;
 }
 
 /* Reveal body after PREMIUM_CSS parses — overrides pre-hide from earlier inline style. */
@@ -1580,6 +1771,57 @@ def list_recent_runs(limit: int = 10):
         return []
     files = sorted(RUNS_DIR.glob("*/*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
     return files[:limit]
+
+
+def list_runs_last_n_days(days: int = 7):
+    """Return all run markdown files modified in the last `days` days, newest first."""
+    if not RUNS_DIR.exists():
+        return []
+    cutoff = time.time() - (days * 86400)
+    files = []
+    for p in RUNS_DIR.glob("*/*.md"):
+        try:
+            mtime = p.stat().st_mtime
+        except OSError:
+            continue
+        if mtime >= cutoff:
+            files.append((p, mtime))
+    files.sort(key=lambda t: t[1], reverse=True)
+    return [p for p, _ in files]
+
+
+def parse_run_file(path: Path) -> dict:
+    """Parse a saved run file. Returns {skill, time, output, prompt_short, meta}."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return {"skill": path.stem, "output": "(unreadable)", "time": None, "prompt_short": "", "meta": {}}
+    # Strip frontmatter
+    skill = path.stem
+    when = None
+    meta: dict = {}
+    body = text
+    if text.startswith("---\n"):
+        end = text.find("\n---\n", 4)
+        if end > 0:
+            fm = text[4:end]
+            body = text[end + 5:]
+            for line in fm.splitlines():
+                if ": " in line:
+                    k, v = line.split(": ", 1)
+                    meta[k.strip()] = v.strip()
+            skill = meta.get("skill", skill)
+            when = meta.get("time")
+    # Split prompt and output sections
+    prompt_short = ""
+    output = body.strip()
+    if "**Output**" in body:
+        prompt_part, _, output_part = body.partition("**Output**")
+        output = output_part.strip()
+        if "**Prompt**" in prompt_part:
+            _, _, prompt_body = prompt_part.partition("**Prompt**")
+            prompt_short = prompt_body.strip().lstrip("`").strip()[:200]
+    return {"skill": skill, "time": when, "output": output, "prompt_short": prompt_short, "meta": meta}
 
 
 def list_awaiting_approvals():
@@ -2145,7 +2387,7 @@ def finalize_run_if_done(label: str, prompt: str):
 # ═══════════════════════════════════════════════════════════
 
 if not VAULT_PATH.exists():
-    st.markdown('<h1 class="hero-title">Agentic <em>OS</em></h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">Hailey\'s <em>Hub</em></h1>', unsafe_allow_html=True)
     st.error(f"Vault not found: `{VAULT_PATH}`")
     st.markdown(
         "**Setup required.** Edit `config.py` and set:\n\n"
@@ -2198,25 +2440,310 @@ if _action_q == "terminal":
         st.toast("Terminal opened at vault.", icon="✅")
     except Exception as e:
         st.toast(f"Failed: {e}", icon="⚠️")
+    # Preserve brand when clearing the action param
+    _saved_brand = st.query_params.get("brand")
     st.query_params.clear()
+    if _saved_brand:
+        st.query_params["brand"] = _saved_brand
 
-if MASCOT_IDLE_URL:
-    _mascot_html = (
-        f'<span class="mascot" '
-        f'style="--idle:url({MASCOT_IDLE_URL}); '
-        f'--run:url({MASCOT_RUN_URL});"></span>'
-    )
-else:
-    _mascot_html = ""
+# ─── STAR WARS TRIO (left of title) ───
+
+# Yoda — green sage with pointy ears
+_yoda_svg = (
+    '<svg class="tree-mascot" viewBox="0 0 18 28" '
+    'xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
+    # ears
+    '<rect x="2" y="2" width="2" height="4" fill="#7ec850"/>'
+    '<rect x="14" y="2" width="2" height="4" fill="#7ec850"/>'
+    # head
+    '<rect x="4" y="4" width="10" height="2" fill="#a4e635"/>'
+    '<rect x="2" y="6" width="14" height="6" fill="#a4e635"/>'
+    '<rect x="4" y="12" width="10" height="2" fill="#a4e635"/>'
+    # highlights
+    '<rect x="4" y="4" width="2" height="2" fill="#c8ff5e"/>'
+    '<rect x="2" y="6" width="2" height="2" fill="#c8ff5e"/>'
+    # shadows
+    '<rect x="14" y="8" width="2" height="2" fill="#7dc432"/>'
+    '<rect x="12" y="12" width="2" height="2" fill="#7dc432"/>'
+    # eyes
+    '<rect x="6" y="8" width="2" height="2" fill="#1a1a2e"/>'
+    '<rect x="10" y="8" width="2" height="2" fill="#1a1a2e"/>'
+    # robe
+    '<rect x="4" y="14" width="10" height="2" fill="#8b6f47"/>'
+    '<rect x="2" y="16" width="14" height="6" fill="#a08359"/>'
+    '<rect x="14" y="16" width="2" height="6" fill="#6e573a"/>'
+    '<rect x="0" y="22" width="18" height="2" fill="#a08359"/>'
+    '<rect x="0" y="24" width="18" height="2" fill="#6e573a"/>'
+    '</svg>'
+)
+
+# R2-D2 — astromech droid (white + blue dome)
+_r2d2_svg = (
+    '<svg class="tree-mascot" viewBox="0 0 18 28" '
+    'xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
+    # dome top (white)
+    '<rect x="6" y="2" width="6" height="2" fill="#e8e8e8"/>'
+    '<rect x="4" y="4" width="10" height="2" fill="#e8e8e8"/>'
+    '<rect x="2" y="6" width="14" height="2" fill="#e8e8e8"/>'
+    # dome eye (blue lens)
+    '<rect x="8" y="6" width="2" height="2" fill="#2d6cc8"/>'
+    '<rect x="8" y="6" width="1" height="1" fill="#5aa5ff"/>'
+    # dome shadow
+    '<rect x="14" y="6" width="2" height="2" fill="#b8b8b8"/>'
+    '<rect x="12" y="4" width="2" height="2" fill="#b8b8b8"/>'
+    # neck divider
+    '<rect x="2" y="8" width="14" height="1" fill="#7a7a7a"/>'
+    # body (white with blue panels)
+    '<rect x="2" y="9" width="14" height="11" fill="#f0f0f0"/>'
+    # blue accent panels
+    '<rect x="4" y="10" width="4" height="2" fill="#2d6cc8"/>'
+    '<rect x="10" y="10" width="4" height="2" fill="#2d6cc8"/>'
+    # round port
+    '<rect x="7" y="13" width="4" height="3" fill="#7a7a7a"/>'
+    '<rect x="8" y="14" width="2" height="1" fill="#1a1a2e"/>'
+    # rectangular grilles
+    '<rect x="4" y="17" width="4" height="1" fill="#7a7a7a"/>'
+    '<rect x="10" y="17" width="4" height="1" fill="#7a7a7a"/>'
+    # body shadow
+    '<rect x="14" y="9" width="2" height="11" fill="#c8c8c8"/>'
+    # legs
+    '<rect x="3" y="20" width="3" height="6" fill="#d8d8d8"/>'
+    '<rect x="12" y="20" width="3" height="6" fill="#d8d8d8"/>'
+    # leg shadows
+    '<rect x="5" y="20" width="1" height="6" fill="#a8a8a8"/>'
+    '<rect x="14" y="20" width="1" height="6" fill="#a8a8a8"/>'
+    # feet
+    '<rect x="2" y="26" width="5" height="2" fill="#5a5a5a"/>'
+    '<rect x="11" y="26" width="5" height="2" fill="#5a5a5a"/>'
+    '</svg>'
+)
+
+# Darth Vader — black helmet + cape, red lightsaber
+_vader_svg = (
+    '<svg class="tree-mascot" viewBox="0 0 18 28" '
+    'xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
+    # helmet top
+    '<rect x="5" y="2" width="8" height="2" fill="#1a1a1a"/>'
+    '<rect x="3" y="4" width="12" height="2" fill="#1a1a1a"/>'
+    '<rect x="2" y="6" width="14" height="6" fill="#1a1a1a"/>'
+    # helmet highlights
+    '<rect x="3" y="4" width="2" height="2" fill="#2a2a2a"/>'
+    '<rect x="2" y="6" width="2" height="2" fill="#2a2a2a"/>'
+    # red eye slits
+    '<rect x="5" y="8" width="3" height="1" fill="#ff2d3a"/>'
+    '<rect x="10" y="8" width="3" height="1" fill="#ff2d3a"/>'
+    # mouth grille
+    '<rect x="6" y="10" width="6" height="1" fill="#3a3a3a"/>'
+    '<rect x="7" y="11" width="4" height="1" fill="#5a5a5a"/>'
+    # neck
+    '<rect x="6" y="12" width="6" height="2" fill="#1a1a1a"/>'
+    # cape shoulders
+    '<rect x="2" y="14" width="14" height="2" fill="#0a0a0a"/>'
+    # chest panel (silver/grey)
+    '<rect x="6" y="16" width="6" height="3" fill="#5a5a6a"/>'
+    # control buttons (red/green)
+    '<rect x="7" y="17" width="1" height="1" fill="#ff2d3a"/>'
+    '<rect x="9" y="17" width="1" height="1" fill="#a4e635"/>'
+    # cape
+    '<rect x="2" y="16" width="4" height="10" fill="#0a0a0a"/>'
+    '<rect x="12" y="16" width="4" height="10" fill="#0a0a0a"/>'
+    '<rect x="0" y="22" width="18" height="4" fill="#0a0a0a"/>'
+    # red lightsaber hilt + blade (right side)
+    '<rect x="15" y="14" width="2" height="2" fill="#888888"/>'
+    '<rect x="15" y="2" width="2" height="12" fill="#ff2d3a"/>'
+    '<rect x="15" y="2" width="1" height="12" fill="#ffaab0"/>'
+    '</svg>'
+)
+
+# ─── LORD OF THE RINGS TRIO (right of title) ───
+
+# Gandalf — grey wizard with pointy hat
+_gandalf_svg = (
+    '<svg class="tree-mascot" viewBox="0 0 18 28" '
+    'xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
+    # pointed hat
+    '<rect x="8" y="0" width="2" height="2" fill="#3a3a4a"/>'
+    '<rect x="6" y="2" width="6" height="2" fill="#4a4a60"/>'
+    '<rect x="6" y="2" width="2" height="2" fill="#3a3a4a"/>'
+    '<rect x="4" y="4" width="10" height="2" fill="#4a4a60"/>'
+    # hat brim
+    '<rect x="2" y="6" width="14" height="2" fill="#3a3a4a"/>'
+    '<rect x="2" y="6" width="2" height="2" fill="#2a2a3a"/>'
+    # face skin
+    '<rect x="6" y="8" width="6" height="4" fill="#e8c7a0"/>'
+    # eyes
+    '<rect x="7" y="9" width="1" height="1" fill="#1a1a2e"/>'
+    '<rect x="10" y="9" width="1" height="1" fill="#1a1a2e"/>'
+    # white beard
+    '<rect x="4" y="12" width="10" height="2" fill="#f5f5f0"/>'
+    '<rect x="2" y="14" width="14" height="4" fill="#f5f5f0"/>'
+    '<rect x="4" y="18" width="10" height="2" fill="#f5f5f0"/>'
+    # beard shadow
+    '<rect x="14" y="14" width="2" height="4" fill="#d4d4cf"/>'
+    # grey robe
+    '<rect x="2" y="20" width="14" height="4" fill="#7a8492"/>'
+    '<rect x="0" y="24" width="18" height="2" fill="#7a8492"/>'
+    '<rect x="0" y="26" width="18" height="2" fill="#5a6472"/>'
+    '<rect x="14" y="20" width="2" height="4" fill="#5a6472"/>'
+    # staff
+    '<rect x="16" y="2" width="1" height="22" fill="#6e4a2a"/>'
+    '</svg>'
+)
+
+# Frodo — hobbit with curly brown hair, green cloak
+_frodo_svg = (
+    '<svg class="tree-mascot" viewBox="0 0 18 28" '
+    'xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
+    # curly brown hair
+    '<rect x="5" y="2" width="8" height="2" fill="#6e3a1a"/>'
+    '<rect x="3" y="4" width="12" height="2" fill="#6e3a1a"/>'
+    '<rect x="2" y="6" width="14" height="2" fill="#6e3a1a"/>'
+    # hair curls (lighter highlights)
+    '<rect x="4" y="4" width="2" height="2" fill="#8b5028"/>'
+    '<rect x="8" y="2" width="2" height="2" fill="#8b5028"/>'
+    '<rect x="12" y="4" width="2" height="2" fill="#8b5028"/>'
+    # face (pale skin)
+    '<rect x="4" y="8" width="10" height="4" fill="#f0d4ad"/>'
+    # blue eyes (Frodo is famous for them)
+    '<rect x="6" y="9" width="2" height="2" fill="#2d6cc8"/>'
+    '<rect x="10" y="9" width="2" height="2" fill="#2d6cc8"/>'
+    '<rect x="6" y="9" width="1" height="1" fill="#5aa5ff"/>'
+    '<rect x="10" y="9" width="1" height="1" fill="#5aa5ff"/>'
+    # small mouth
+    '<rect x="8" y="11" width="2" height="1" fill="#a85e3a"/>'
+    # green elven cloak
+    '<rect x="4" y="12" width="10" height="2" fill="#3a6a3a"/>'
+    '<rect x="2" y="14" width="14" height="8" fill="#4d8a4d"/>'
+    '<rect x="14" y="14" width="2" height="8" fill="#2a5a2a"/>'
+    # cloak fold (gold ring brooch — Frodo wears one)
+    '<rect x="8" y="14" width="2" height="2" fill="#e8c14a"/>'
+    '<rect x="8" y="15" width="1" height="1" fill="#a8800a"/>'
+    # cloak bottom flare
+    '<rect x="0" y="22" width="18" height="4" fill="#4d8a4d"/>'
+    '<rect x="0" y="26" width="18" height="2" fill="#2a5a2a"/>'
+    '</svg>'
+)
+
+# Gollum — pale grey, big eyes, loincloth
+_gollum_svg = (
+    '<svg class="tree-mascot" viewBox="0 0 18 28" '
+    'xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">'
+    # bald head (pale greenish-grey)
+    '<rect x="6" y="4" width="6" height="2" fill="#a8a89a"/>'
+    '<rect x="4" y="6" width="10" height="6" fill="#a8a89a"/>'
+    # head highlights/shadow
+    '<rect x="4" y="6" width="2" height="2" fill="#c0c0b2"/>'
+    '<rect x="12" y="8" width="2" height="4" fill="#888878"/>'
+    # giant white eyes (Gollum's signature)
+    '<rect x="5" y="8" width="3" height="3" fill="#ffffff"/>'
+    '<rect x="10" y="8" width="3" height="3" fill="#ffffff"/>'
+    # blue/cyan pupils (lit from within)
+    '<rect x="6" y="9" width="1" height="1" fill="#5aa5ff"/>'
+    '<rect x="11" y="9" width="1" height="1" fill="#5aa5ff"/>'
+    # snarly mouth
+    '<rect x="6" y="11" width="6" height="1" fill="#5a4a3a"/>'
+    '<rect x="7" y="11" width="1" height="1" fill="#ffffff"/>'
+    '<rect x="10" y="11" width="1" height="1" fill="#ffffff"/>'
+    # scrawny neck
+    '<rect x="7" y="12" width="4" height="2" fill="#a8a89a"/>'
+    # bony shoulders + arms hugging
+    '<rect x="4" y="14" width="10" height="2" fill="#a8a89a"/>'
+    # ribcage body
+    '<rect x="5" y="16" width="8" height="6" fill="#a8a89a"/>'
+    # rib shadows
+    '<rect x="6" y="17" width="6" height="1" fill="#888878"/>'
+    '<rect x="6" y="19" width="6" height="1" fill="#888878"/>'
+    # body shadow
+    '<rect x="11" y="16" width="2" height="6" fill="#888878"/>'
+    # ragged loincloth
+    '<rect x="4" y="22" width="10" height="3" fill="#6e573a"/>'
+    '<rect x="5" y="25" width="2" height="1" fill="#6e573a"/>'
+    '<rect x="11" y="25" width="2" height="1" fill="#6e573a"/>'
+    # crouched legs
+    '<rect x="5" y="25" width="3" height="3" fill="#a8a89a"/>'
+    '<rect x="10" y="25" width="3" height="3" fill="#a8a89a"/>'
+    '</svg>'
+)
+
+_mascot_html_left = (
+    f'<span class="mascot-pair">{_yoda_svg}{_r2d2_svg}{_vader_svg}</span>'
+)
+_mascot_html_right = (
+    f'<span class="mascot-pair">{_gandalf_svg}{_frodo_svg}{_gollum_svg}</span>'
+)
 st.markdown(
     '<div class="title-row">'
     '<h1 class="hero-title">'
-    f'{_mascot_html}'
-    '<span class="hero-word">Agentic</span>'
-    '<em>OS</em>'
+    f'{_mascot_html_left}'
+    '<span class="hero-word">Hailey\'s</span>'
+    '<em>Hub</em>'
+    f'{_mascot_html_right}'
     '</h1>'
     f'<div class="caption-mono title-crumb">vault · {VAULT_PATH.name} · plan · {CLAUDE_PLAN} · permission · {PERMISSION_MODE}</div>'
     '</div>',
+    unsafe_allow_html=True,
+)
+
+
+# ═══════════════════════════════════════════════════════════
+# BRAND SWITCHER — Wild Oak Trail · Sandalwood AI · Popcorn & Prayers
+# ═══════════════════════════════════════════════════════════
+
+BRANDS = {
+    "wot": {
+        "label": "Wild Oak Trail",
+        "tagline": "e-commerce · shopify",
+        "accent": "var(--accent-3)",   # lime green
+    },
+    "sandalwood": {
+        "label": "Sandalwood AI",
+        "tagline": "content · research · AI radar",
+        "accent": "var(--accent-5)",   # purple
+    },
+    "popcorn": {
+        "label": "Popcorn & Prayers",
+        "tagline": "Christian movie reviews",
+        "accent": "var(--accent)",     # hot magenta
+    },
+}
+
+if "active_brand" not in st.session_state:
+    st.session_state.active_brand = "wot"
+
+# Allow ?brand=... query param to set the brand
+_brand_q = st.query_params.get("brand")
+if _brand_q and _brand_q in BRANDS:
+    st.session_state.active_brand = _brand_q
+
+_active_brand = st.session_state.active_brand
+
+st.markdown(
+    '<style>'
+    '.brand-switcher { display: flex; gap: 0.5rem; margin: 0.4rem 0 1rem 0; }'
+    '.brand-pill { flex: 1; display: block; padding: 0.85rem 1rem; border-radius: 14px; '
+    '  background: var(--bg-card); box-shadow: 0 0 0 1px var(--ring-soft); '
+    '  text-decoration: none !important; color: var(--fg); text-align: center; '
+    "  font-family: 'Outfit', system-ui, sans-serif; "
+    '  transition: box-shadow 0.14s, transform 0.14s; }'
+    '.brand-pill:hover { box-shadow: 0 0 0 1.5px var(--accent); transform: translateY(-1px); }'
+    '.brand-pill.active { box-shadow: 0 0 0 2px var(--pill-accent, var(--accent)); '
+    '  background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-card-hi) 100%); }'
+    '.brand-pill-name { display: block; font-weight: 600; font-size: 1rem; '
+    '  letter-spacing: 0.02em; color: var(--pill-accent, var(--fg)); }'
+    '.brand-pill-tag { display: block; font-size: 0.7rem; color: var(--fg-mute); '
+    '  letter-spacing: 0.04em; text-transform: lowercase; margin-top: 0.15rem; }'
+    '</style>'
+    '<div class="brand-switcher">'
+    + "".join(
+        f'<a class="brand-pill{" active" if key == _active_brand else ""}" '
+        f'href="?brand={key}" target="_self" '
+        f'style="--pill-accent: {meta["accent"]};">'
+        f'<span class="brand-pill-name">{html_escape(meta["label"])}</span>'
+        f'<span class="brand-pill-tag">{html_escape(meta["tagline"])}</span>'
+        f'</a>'
+        for key, meta in BRANDS.items()
+    )
+    + '</div>',
     unsafe_allow_html=True,
 )
 
@@ -2248,7 +2775,7 @@ else:
 st.markdown(
     f"""
     <div class="quicknav">
-        <a class="qn-claude" href="?action=terminal" target="_self">
+        <a class="qn-claude" href="?brand={_active_brand}&action=terminal" target="_self">
             <span class="qn-icon">◆</span>claude code<span class="qn-arrow">↗</span>
         </a>
         <a href="{vault_uri}" target="_blank"><span class="qn-icon">✱</span>vault</a>
@@ -2263,7 +2790,7 @@ st.markdown(
 
 
 # ═══════════════════════════════════════════════════════════
-# USAGE GAUGES + APPROVALS
+# BOOKKEEPING STAT CARDS  (was: usage gauges)
 # ═══════════════════════════════════════════════════════════
 
 usage = calc_usage_windows()
@@ -2343,165 +2870,573 @@ _5h_delta = compute_delta(_5h_cur, _5h_pri)
 _wk_delta = compute_delta(_wk_cur, _wk_pri)
 _rt_delta = compute_delta(_rt_today, _rt_yday)
 
-m1, m2, m3 = st.columns(3, gap="small")
-with m1:
-    st.markdown(
-        render_gauge(
-            "5-hour window",
-            f"resets · {fmt_time_until(five_h_reset)}",
-            five_h_tokens,
-            LIMITS["five_hour_tokens"],
-            fmt_tokens(five_h_tokens),
-            fmt_tokens(LIMITS["five_hour_tokens"]),
-            f"· {usage['five_hour']['sessions']} sessions",
-            delta=_5h_delta,
-        ),
-        unsafe_allow_html=True,
+def render_stat_card(
+    label: str,
+    sub_label: str,
+    value_str: str,
+    is_negative: bool,
+    sub_text: str,
+    accent_var: str = "var(--accent)",
+    min_height: str | None = None,
+) -> str:
+    color = "var(--danger)" if is_negative else accent_var
+    style_attr = (
+        f' style="min-height: {min_height}; display: flex; flex-direction: column; justify-content: space-between;"'
+        if min_height else ''
     )
-with m2:
-    st.markdown(
-        render_gauge(
-            "weekly window",
-            f"resets · {fmt_time_until(week_reset)}",
-            week_tokens,
-            LIMITS["weekly_tokens"],
-            fmt_tokens(week_tokens),
-            fmt_tokens(LIMITS["weekly_tokens"]),
-            f"· {usage['weekly']['sessions']} sessions",
-            delta=_wk_delta,
-        ),
-        unsafe_allow_html=True,
-    )
-with m3:
-    st.markdown(
-        render_gauge(
-            f"routines · {CLAUDE_PLAN}",
-            "resets · midnight",
-            routines_today,
-            LIMITS["daily_routine_runs"],
-            str(routines_today),
-            str(LIMITS["daily_routine_runs"]),
-            f"{fmt_cost(today_cost)} today",
-            delta=_rt_delta,
-        ),
-        unsafe_allow_html=True,
+    return (
+        f'<div class="gauge-card"{style_attr}>'
+        f'<div class="gauge-header">'
+        f'<span class="gauge-label">{label}</span>'
+        f'<span class="gauge-reset">{sub_label}</span>'
+        f'</div>'
+        f"<div style=\"font-family: 'Outfit', system-ui, -apple-system, sans-serif; font-size: 1.6rem; "
+        f"font-weight: 600; color: {color}; padding: 0.45rem 0 0.35rem 0; "
+        f"letter-spacing: -0.02em; line-height: 1.1;\">"
+        f'{value_str}'
+        f'</div>'
+        f'<div class="gauge-stats">'
+        f'<span class="gauge-sub">{sub_text}</span>'
+        f'</div>'
+        f'</div>'
     )
 
-st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+
+def _fmt_money(v) -> str:
+    if v is None:
+        return "—"
+    sign = "-" if v < 0 else ""
+    return f"{sign}${abs(v):,.0f}"
+
+
+_bk = load_bookkeeping()
+_ytd = _bk.get("ytd") or {}
+_monthly = _bk.get("monthly") or {}
+_cur_month_name = _bk.get("current_month_name") or datetime.now().strftime("%B")
+_last_full_month_name = _bk.get("last_full_month_name") or ""
+_cur_month = _monthly.get(_cur_month_name) or {}
+_last_full_month = _monthly.get(_last_full_month_name) or {}
+
+if _active_brand == "wot":
+    _bk_h1, _bk_h2 = st.columns([5, 1], gap="small")
+    with _bk_h1:
+        _as_of = _bk.get("as_of", "—")
+        st.markdown(
+            f'<div class="cat-label" style="display: flex; align-items: baseline; gap: 0.7rem;">'
+            f'<span>bookkeeping</span>'
+            f'<span style="font-weight: normal; color: var(--fg-mute); text-transform: lowercase; '
+            f'font-size: 0.7rem;">as of · {_as_of}</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    with _bk_h2:
+        if st.button("↻ refresh", key="refresh_bookkeeping"):
+            with st.spinner("pulling sheet..."):
+                try:
+                    import importlib
+                    import refresh_bookkeeping as _rb
+                    importlib.reload(_rb)
+                    _rb.main()
+                    st.rerun()
+                except Exception as _e:
+                    st.error(f"refresh failed: {_e}")
+
+    with st.expander("show net income figures", expanded=False):
+        m1, m2, m3 = st.columns(3, gap="small")
+        with m1:
+            _v = _ytd.get("net", 0.0)
+            _m = _ytd.get("margin_pct")
+            st.markdown(
+                render_stat_card(
+                    f"net income · ytd {_bk.get('year', '')}",
+                    f"{_ytd.get('orders', 0)} orders",
+                    _fmt_money(_v),
+                    is_negative=(_v < 0),
+                    sub_text=f"margin {_m:.1f}%" if _m is not None else "margin —",
+                    accent_var="var(--accent-5)",   # purple
+                ),
+                unsafe_allow_html=True,
+            )
+        with m2:
+            _v = _last_full_month.get("net", 0.0)
+            _m = _last_full_month.get("margin_pct")
+            st.markdown(
+                render_stat_card(
+                    f"net income · {_last_full_month_name.lower()} (last full)",
+                    f"{_last_full_month.get('orders', 0)} orders",
+                    _fmt_money(_v),
+                    is_negative=(_v < 0),
+                    sub_text=f"margin {_m:.1f}%" if _m is not None else "margin —",
+                    accent_var="var(--accent-2)",   # cyan
+                ),
+                unsafe_allow_html=True,
+            )
+        with m3:
+            _v = _cur_month.get("net", 0.0)
+            _m = _cur_month.get("margin_pct")
+            st.markdown(
+                render_stat_card(
+                    f"net income · {_cur_month_name.lower()} (in progress)",
+                    f"{_cur_month.get('orders', 0)} orders so far",
+                    _fmt_money(_v),
+                    is_negative=(_v < 0),
+                    sub_text=f"margin {_m:.1f}%" if _m is not None else "margin —",
+                    accent_var="var(--accent)",     # hot magenta
+                ),
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════
-# RUNS-PER-DAY CHART
+# SHOPIFY — live commerce metrics
 # ═══════════════════════════════════════════════════════════
 
-import plotly.graph_objects as go
+if _active_brand == "wot":
+    if shopify_data.is_configured():
+        _sh_h1, _sh_h2 = st.columns([5, 1], gap="small")
+        with _sh_h1:
+            st.markdown(
+                '<div class="cat-label" style="display: flex; align-items: baseline; gap: 0.7rem;">'
+                '<span>shopify</span>'
+                '<span style="font-weight: normal; color: var(--fg-mute); text-transform: lowercase; '
+                'font-size: 0.7rem;">live · wild-oak-trail.myshopify.com</span>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        with _sh_h2:
+            if st.button("↻ refresh", key="refresh_shopify"):
+                shopify_data.fetch_revenue_window.clear()
+                shopify_data.fetch_recent_orders.clear()
+                shopify_data.fetch_top_products_mtd.clear()
+                shopify_data.fetch_top_landing_pages_7d.clear()
+                st.rerun()
 
-df_cum = activity_cumulative(30)
-_cum_total = int(df_cum["cumulative"].iloc[-1]) if not df_cum.empty else 0
-_cum_30d = int(df_cum["day_count"].sum())
+        try:
+            _today = shopify_data.fetch_today()
+            _mtd = shopify_data.fetch_mtd()
+            _shopify_err = None
+        except Exception as _e:
+            _today = {"orders": 0, "gross": 0.0, "aov": 0.0}
+            _mtd = {"orders": 0, "gross": 0.0, "aov": 0.0}
+            _shopify_err = str(_e)
+
+        if _shopify_err:
+            st.markdown(
+                f'<div style="color: var(--danger); font-size: 0.85rem; padding: 0.4rem 0;">'
+                f'shopify api error: {html_escape(_shopify_err)}</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            try:
+                _landing = shopify_data.fetch_top_landing_pages_7d(limit=10)
+                _landing_err = None
+            except Exception as _le:
+                _landing = []
+                _landing_err = str(_le)
+
+            s1, s2, s3 = st.columns(3, gap="small")
+            with s2:
+                st.markdown(
+                    render_stat_card(
+                        "today's revenue",
+                        f"{_today['orders']} orders",
+                        _fmt_money(_today["gross"]),
+                        is_negative=False,
+                        sub_text=f"aov ${_today['aov']:,.0f}" if _today["orders"] else "no orders yet",
+                        accent_var="var(--accent-2)",
+                        min_height="6.2rem",
+                    ),
+                    unsafe_allow_html=True,
+                )
+            with s3:
+                st.markdown(
+                    render_stat_card(
+                        f"month to date · {_cur_month_name.lower()}",
+                        f"{_mtd['orders']} orders",
+                        _fmt_money(_mtd["gross"]),
+                        is_negative=False,
+                        sub_text=f"aov ${_mtd['aov']:,.0f}" if _mtd["orders"] else "no orders yet",
+                        accent_var="var(--accent)",
+                        min_height="6.2rem",
+                    ),
+                    unsafe_allow_html=True,
+                )
+
+            with s1:
+                _quotes = [
+                    ("Believe you can and you're halfway there.", "Theodore Roosevelt"),
+                    ("It always seems impossible until it's done.", "Nelson Mandela"),
+                    ("Success is not final, failure is not fatal.", "Winston Churchill"),
+                    ("Done is better than perfect.", ""),
+                    ("Small steps, every day.", ""),
+                    ("Great things never come from comfort zones.", ""),
+                    ("Action is the foundational key to all success.", "Pablo Picasso"),
+                    ("You are doing better than you think.", ""),
+                    ("Trust the process.", ""),
+                    ("The way to get started is to quit talking and begin doing.", "Walt Disney"),
+                ]
+                _n = len(_quotes)
+                _cycle = _n * 20  # 20s per quote
+                _quote_items = []
+                for idx, (text, author) in enumerate(_quotes):
+                    attribution = f'<span style="opacity:0.7; font-size:0.78rem;"> — {html_escape(author)}</span>' if author else ""
+                    _quote_items.append(
+                        f'<div class="quote-item" style="animation-delay: {idx * 20}s;">'
+                        f'"{html_escape(text)}"{attribution}'
+                        f'</div>'
+                    )
+                _quotes_html = (
+                    f'<style>'
+                    f'.quote-card {{ position: relative; min-height: 6.2rem; }}'
+                    f'.quote-stage {{ position: relative; height: 4.2rem; }}'
+                    f'.quote-item {{'
+                    f'  position: absolute; inset: 0;'
+                    f'  display: flex; align-items: center; justify-content: center;'
+                    f'  text-align: center; padding: 0 0.3rem;'
+                    f"  font-family: 'Fraunces', Georgia, serif;"
+                    f'  font-size: 1.05rem; line-height: 1.35;'
+                    f'  color: var(--accent-5);'
+                    f'  font-style: italic;'
+                    f'  font-weight: 400;'
+                    f'  opacity: 0;'
+                    f'  animation: quote-rotate {_cycle}s infinite;'
+                    f'}}'
+                    f'@keyframes quote-rotate {{'
+                    f'  0%   {{ opacity: 0; transform: translateY(4px); }}'
+                    f'  0.5% {{ opacity: 1; transform: translateY(0); }}'
+                    f'  9.5% {{ opacity: 1; transform: translateY(0); }}'
+                    f'  10%  {{ opacity: 0; transform: translateY(-4px); }}'
+                    f'  100% {{ opacity: 0; }}'
+                    f'}}'
+                    f'</style>'
+                    f'<div class="gauge-card quote-card">'
+                    f'<div class="gauge-header">'
+                    f'<span class="gauge-label">daily fuel</span>'
+                    f'<span class="gauge-reset">rotates · 20s</span>'
+                    f'</div>'
+                    f'<div class="quote-stage">'
+                    f'{"".join(_quote_items)}'
+                    f'</div>'
+                    f'</div>'
+                )
+                st.markdown(_quotes_html, unsafe_allow_html=True)
+
+            @st.dialog("recent orders · last 10", width="large")
+            def _show_recent_orders():
+                try:
+                    recent = shopify_data.fetch_recent_orders(limit=10)
+                    if recent:
+                        df = pd.DataFrame([
+                            {
+                                "order": r["order"],
+                                "customer": r["customer"],
+                                "total": f"${r['total']:,.2f}",
+                                "payment": r["financial"] or "—",
+                                "fulfillment": r["fulfillment"] or "—",
+                                "when": r["created_at"][:16].replace("T", " ") if r["created_at"] else "",
+                            }
+                            for r in recent
+                        ])
+                        st.dataframe(df, hide_index=True, width='stretch')
+                    else:
+                        st.markdown(
+                            '<div style="color: var(--fg-dim); font-size: 0.85rem;">no orders found.</div>',
+                            unsafe_allow_html=True,
+                        )
+                except Exception as _de:
+                    st.error(f"failed to load recent orders: {_de}")
+
+            _tp_title = f"top products · {_cur_month_name.lower()} mtd"
+
+            @st.dialog(_tp_title, width="large")
+            def _show_top_products():
+                try:
+                    top = shopify_data.fetch_top_products_mtd(limit=10)
+                    if top:
+                        df = pd.DataFrame([
+                            {
+                                "product": r["title"],
+                                "units": r["units"],
+                                "revenue": f"${r['revenue']:,.2f}",
+                            }
+                            for r in top
+                        ])
+                        st.dataframe(df, hide_index=True, width='stretch')
+                    else:
+                        st.markdown(
+                            '<div style="color: var(--fg-dim); font-size: 0.85rem;">no sales this month yet.</div>',
+                            unsafe_allow_html=True,
+                        )
+                except Exception as _de:
+                    st.error(f"failed to load top products: {_de}")
+
+            @st.dialog("top landing pages · last 7 days", width="large")
+            def _show_landing_pages():
+                if _landing_err and not _landing:
+                    if "read_reports" in (_landing_err or ""):
+                        st.markdown(
+                            '<div style="color: var(--fg-dim); font-size: 0.85rem;">'
+                            'analytics scope not yet granted. re-install the app to approve '
+                            '<code>read_reports</code> — see chat for the install URL.</div>',
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.error(f"failed to load landing pages: {_landing_err}")
+                elif _landing:
+                    df = pd.DataFrame([
+                        {
+                            "rank": i + 1,
+                            "landing page": r.get("path") or "/",
+                            "sessions": int(r.get("sessions", 0)),
+                        }
+                        for i, r in enumerate(_landing)
+                    ])
+                    st.dataframe(df, hide_index=True, width='stretch')
+                else:
+                    st.markdown(
+                        '<div style="color: var(--fg-dim); font-size: 0.85rem;">no traffic data in the last 7 days.</div>',
+                        unsafe_allow_html=True,
+                    )
+
+            st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
+            b1, b2, b3 = st.columns(3, gap="small")
+            with b1:
+                if st.button("recent orders · last 10", key="btn_recent_orders", width='stretch'):
+                    _show_recent_orders()
+            with b2:
+                if st.button(f"top products · {_cur_month_name.lower()} mtd", key="btn_top_products", width='stretch'):
+                    _show_top_products()
+            with b3:
+                if st.button("top landing pages · last 7 days", key="btn_landing_pages", width='stretch'):
+                    _show_landing_pages()
+
+        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
 
-def _build_activity_svg(df: pd.DataFrame) -> str:
-    if df.empty:
-        return ""
-    cum = df["cumulative"].tolist()
-    dates = df["date"].tolist()
-    n = len(cum)
-    max_c = max(cum) or 1
-    VB_W, VB_H = 1000, 180
-    ML, MR, MT, MB = 24, 24, 14, 6
-    pw = VB_W - ML - MR
-    ph = VB_H - MT - MB
+# ═══════════════════════════════════════════════════════════
+# NET INCOME CHART — by month, current year
+# ═══════════════════════════════════════════════════════════
 
-    pts = []
-    for i, c in enumerate(cum):
-        x = ML + (i / max(1, n - 1)) * pw
-        y = MT + ph - (c / max_c) * ph
-        pts.append((x, y))
+if _active_brand == "wot":
+    _months_order = ["January", "February", "March", "April", "May", "June",
+                     "July", "August", "September", "October", "November", "December"]
+    _short_months = ["jan", "feb", "mar", "apr", "may", "jun",
+                     "jul", "aug", "sep", "oct", "nov", "dec"]
+    _net_vals = [_monthly.get(m, {}).get("net", 0.0) for m in _months_order]
+    _pos_color = "#a4e635"   # lime — positive months
+    _neg_color = "#ff4d6d"   # coral pink — negative months
+    _bar_colors = [_pos_color if v >= 0 else _neg_color for v in _net_vals]
 
-    line_d = "M " + " L ".join(f"{x:.2f},{y:.2f}" for x, y in pts)
-    area_d = (
-        f"M {pts[0][0]:.2f},{MT + ph:.2f} "
-        + " ".join(f"L {x:.2f},{y:.2f}" for x, y in pts)
-        + f" L {pts[-1][0]:.2f},{MT + ph:.2f} Z"
+    _profit_fig = go.Figure()
+    _profit_fig.add_trace(go.Bar(
+        x=_short_months,
+        y=_net_vals,
+        marker=dict(color=_bar_colors, line=dict(width=0)),
+        hovertemplate="<b>%{x}</b><br>$%{y:,.2f}<extra></extra>",
+        name="net income",
+    ))
+    _profit_fig.update_layout(
+        height=280,
+        margin=dict(l=50, r=20, t=10, b=30),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Outfit, system-ui, sans-serif", size=10, color="#5a5a70"),
+        showlegend=False,
+        bargap=0.32,
+        hoverlabel=dict(
+            bgcolor="#ffffff",
+            bordercolor="#ec1e79",
+            font=dict(family="Outfit, system-ui, sans-serif", color="#1a1a2e", size=10),
+        ),
+        xaxis=dict(
+            showgrid=False, zeroline=False, showline=False,
+            tickfont=dict(color="#5a5a70", size=10),
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(26, 26, 46, 0.06)",
+            zeroline=True,
+            zerolinecolor="rgba(26, 26, 46, 0.18)",
+            tickprefix="$",
+            tickformat=",.0f",
+            tickfont=dict(color="#5a5a70", size=10),
+        ),
     )
-    # Closed-loop motion path: trace line forward then back along baseline.
-    # Pulse "does a loop" instead of teleporting back to start.
-    loop_d = (
-        "M " + " L ".join(f"{x:.2f},{y:.2f}" for x, y in pts)
-        + f" L {pts[-1][0]:.2f},{MT + ph:.2f}"
-        + f" L {pts[0][0]:.2f},{MT + ph:.2f} Z"
+
+    _ytd_net = _ytd.get("net", 0)
+    _ytd_str = f"${_ytd_net:,.0f}" if _ytd_net >= 0 else f"-${abs(_ytd_net):,.0f}"
+
+    with st.expander(f"show net income chart · {_bk.get('year', '')}", expanded=False):
+        st.markdown(
+            f'<div class="chart-card">'
+            f'<div class="chart-title">net income · {_bk.get("year", "")} '
+            f'<span>· ytd {_ytd_str}</span></div>',
+            unsafe_allow_html=True,
+        )
+        st.plotly_chart(_profit_fig, use_container_width=True, config={"displayModeBar": False})
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+
+
+# ═══════════════════════════════════════════════════════════
+# SEO + AEO PULSE — latest news, refreshed by the SEO/AEO News skill
+# ═══════════════════════════════════════════════════════════
+
+if _active_brand == "wot":
+    _news_file = RUNS_DIR / "seo-aeo-news.md"
+    _news_text = ""
+    _news_mtime = None
+    if _news_file.exists():
+        _news_text = _news_file.read_text().strip()
+        _news_mtime = datetime.fromtimestamp(_news_file.stat().st_mtime)
+
+    _news_header_sub = (
+        f"updated · {_news_mtime.strftime('%b %d · %H:%M')}"
+        if _news_mtime else
+        "no data yet — run the SEO/AEO News skill below"
     )
 
-    tick_idx = [0, n // 4, n // 2, (3 * n) // 4, n - 1]
-    tick_labels = [dates[i].strftime("%b %d").lower() for i in tick_idx]
-
-    svg = f'''
-<div class="activity-chart-wrap">
-  <svg class="activity-svg" viewBox="0 0 {VB_W} {VB_H}"
-       preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="activityFill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"   stop-color="#c96442" stop-opacity="0.48"/>
-        <stop offset="60%"  stop-color="#c96442" stop-opacity="0.14"/>
-        <stop offset="100%" stop-color="#c96442" stop-opacity="0"/>
-      </linearGradient>
-      <filter id="pulseGlow" x="-200%" y="-200%" width="500%" height="500%">
-        <feGaussianBlur stdDeviation="2.4" result="b1"/>
-        <feGaussianBlur stdDeviation="5.5" result="b2"/>
-        <feMerge>
-          <feMergeNode in="b2"/>
-          <feMergeNode in="b1"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-      <filter id="lineGlow" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="1.2" result="lg"/>
-        <feMerge>
-          <feMergeNode in="lg"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-    </defs>
-    <path d="{area_d}" fill="url(#activityFill)" stroke="none">
-      <animate attributeName="opacity" values="0.85;1;0.85"
-               dur="6s" repeatCount="indefinite"/>
-    </path>
-    <path id="activityPath" d="{line_d}" fill="none"
-          stroke="#c96442" stroke-width="1.6"
-          stroke-linejoin="round" stroke-linecap="round"
-          vector-effect="non-scaling-stroke"
-          filter="url(#lineGlow)"/>
-    <path id="activityLoop" d="{loop_d}" fill="none" stroke="none"/>
-    <circle r="4.2" fill="#ffd3b5" filter="url(#pulseGlow)" opacity="0.95">
-      <animateMotion dur="7s" repeatCount="indefinite" rotate="auto">
-        <mpath href="#activityLoop"/>
-      </animateMotion>
-      <animate attributeName="opacity" values="0.35;1;0.35"
-               dur="1.4s" repeatCount="indefinite"/>
-    </circle>
-    <circle r="2" fill="#fff3e6">
-      <animateMotion dur="7s" repeatCount="indefinite" rotate="auto">
-        <mpath href="#activityLoop"/>
-      </animateMotion>
-    </circle>
-  </svg>
-  <div class="activity-axis">
-    {"".join(f"<span>{lbl}</span>" for lbl in tick_labels)}
-  </div>
-</div>
-'''
-    return svg
+    _expander_label = f"seo + aeo pulse  ·  {_news_header_sub}"
+    with st.expander(_expander_label, expanded=False):
+        if _news_text:
+            st.markdown(_news_text)
+        else:
+            st.markdown(
+                '<div style="color: var(--fg-dim); font-size: 0.85rem; padding: 0.2rem 0;">'
+                'no news fetched yet — click the <strong>SEO/AEO News</strong> button below to pull the latest.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
 
 
-st.markdown(
-    '<div class="chart-card parchment">'
-    '<div class="chart-title">agentic OS · cumulative activity · 30d '
-    f'<span>· {_cum_total:,} total · {_cum_30d} last 30d</span></div>'
-    + _build_activity_svg(df_cum)
-    + '</div>',
-    unsafe_allow_html=True,
-)
+if _active_brand == "sandalwood":
+    # ─── AI News Pulse (same pattern, separate file) ───
+    _ai_news_file = RUNS_DIR / "ai-news.md"
+    _ai_news_text = ""
+    _ai_news_mtime = None
+    if _ai_news_file.exists():
+        _ai_news_text = _ai_news_file.read_text().strip()
+        _ai_news_mtime = datetime.fromtimestamp(_ai_news_file.stat().st_mtime)
+
+    _ai_news_sub = (
+        f"updated · {_ai_news_mtime.strftime('%b %d · %H:%M')}"
+        if _ai_news_mtime else
+        "no data yet — run the AI News skill below"
+    )
+    _ai_expander_label = f"ai news pulse  ·  {_ai_news_sub}"
+    with st.expander(_ai_expander_label, expanded=False):
+        if _ai_news_text:
+            st.markdown(_ai_news_text)
+        else:
+            st.markdown(
+                '<div style="color: var(--fg-dim); font-size: 0.85rem; padding: 0.2rem 0;">'
+                'no news fetched yet — click the <strong>AI News</strong> button below to pull the latest.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+
+if _active_brand == "sandalwood":
+    # ─── GitHub Trending Pulse (same pattern) ───
+    _gh_file = RUNS_DIR / "github-trending.md"
+    _gh_text = ""
+    _gh_mtime = None
+    if _gh_file.exists():
+        _gh_text = _gh_file.read_text().strip()
+        _gh_mtime = datetime.fromtimestamp(_gh_file.stat().st_mtime)
+
+    _gh_sub = (
+        f"updated · {_gh_mtime.strftime('%b %d · %H:%M')}"
+        if _gh_mtime else
+        "no data yet — run the GitHub Trending skill below"
+    )
+    _gh_expander_label = f"github trending  ·  {_gh_sub}"
+    with st.expander(_gh_expander_label, expanded=False):
+        if _gh_text:
+            st.markdown(_gh_text)
+        else:
+            st.markdown(
+                '<div style="color: var(--fg-dim); font-size: 0.85rem; padding: 0.2rem 0;">'
+                'no trending data yet — click the <strong>GitHub Trending</strong> button below to fetch '
+                'the latest. Uses GitHub\'s public search API (no key needed).'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+
+
+if _active_brand == "popcorn":
+    # ═══════════════════════════════════════════════════════════
+    # POPCORN & PRAYERS — Christian movie review brand
+    # ═══════════════════════════════════════════════════════════
+
+    st.markdown(
+        '<div class="cat-label">'
+        '<span>popcorn & prayers</span>'
+        '<span style="font-weight: normal; color: var(--fg-mute); text-transform: lowercase; '
+        'font-size: 0.7rem;">christian movie review brand</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ─── Movie Trending Pulse ───
+    _mt_file = RUNS_DIR / "popcorn-trending.md"
+    _mt_text = ""
+    _mt_mtime = None
+    if _mt_file.exists():
+        _mt_text = _mt_file.read_text().strip()
+        _mt_mtime = datetime.fromtimestamp(_mt_file.stat().st_mtime)
+
+    _mt_sub = (
+        f"updated · {_mt_mtime.strftime('%b %d · %H:%M')}"
+        if _mt_mtime else
+        "no data yet — run the Movie Trending skill below"
+    )
+    _mt_expander_label = f"movie trending  ·  {_mt_sub}"
+    with st.expander(_mt_expander_label, expanded=False):
+        if _mt_text:
+            st.markdown(_mt_text)
+        else:
+            st.markdown(
+                '<div style="color: var(--fg-dim); font-size: 0.85rem; padding: 0.2rem 0;">'
+                'no movie data yet — click the <strong>Movie Trending</strong> button below to pull '
+                "what's hot in theaters and streaming, with faith/family content notes."
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+
+    # ─── Movie Controversies Pulse ───
+    _mc_file = RUNS_DIR / "popcorn-controversies.md"
+    _mc_text = ""
+    _mc_mtime = None
+    if _mc_file.exists():
+        _mc_text = _mc_file.read_text().strip()
+        _mc_mtime = datetime.fromtimestamp(_mc_file.stat().st_mtime)
+
+    _mc_sub = (
+        f"updated · {_mc_mtime.strftime('%b %d · %H:%M')}"
+        if _mc_mtime else
+        "no data yet — run the Movie Controversies skill below"
+    )
+    _mc_expander_label = f"movie controversies  ·  {_mc_sub}"
+    with st.expander(_mc_expander_label, expanded=False):
+        if _mc_text:
+            st.markdown(_mc_text)
+        else:
+            st.markdown(
+                '<div style="color: var(--fg-dim); font-size: 0.85rem; padding: 0.2rem 0;">'
+                'no controversy data yet — click the <strong>Movie Controversies</strong> button below '
+                'to pull current debates and reactions with a faith perspective angle.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2572,26 +3507,26 @@ with col_side:
         go.Bar(
             x=_bar_labels,
             y=_bar_vals,
-            marker=dict(color="#c96442", line=dict(width=0)),
+            marker=dict(color="#ec1e79", line=dict(width=0)),
             hovertemplate="<b>%{x}</b><br>%{y} runs<extra></extra>",
         )
     )
     _barfig.update_layout(
         height=120,
         margin=dict(l=20, r=20, t=10, b=28),
-        paper_bgcolor="#1c1b19",
+        paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="JetBrains Mono, monospace", size=9, color="#b0aea5"),
+        font=dict(family="Outfit, system-ui, sans-serif", size=9, color="#5a5a70"),
         showlegend=False,
         bargap=0.32,
         hoverlabel=dict(
-            bgcolor="#0e0f10",
-            bordercolor="#c96442",
-            font=dict(family="JetBrains Mono, monospace", color="#faf9f5", size=10),
+            bgcolor="#ffffff",
+            bordercolor="#ec1e79",
+            font=dict(family="Outfit, system-ui, sans-serif", color="#1a1a2e", size=10),
         ),
         xaxis=dict(
             showgrid=False, zeroline=False, showline=False,
-            tickfont=dict(color="#b0aea5", size=9),
+            tickfont=dict(color="#5a5a70", size=9),
         ),
         yaxis=dict(
             showgrid=False, zeroline=False, showline=False, showticklabels=False,
@@ -2758,17 +3693,8 @@ with col_main:
                 f'</div>',
                 unsafe_allow_html=True,
             )
-        else:
-            hero_slot.markdown(
-                '<div class="hero-card">'
-                '<div class="hero-label">ready</div>'
-                '<h2 class="hero-headline">run a <em>skill</em> to begin'
-                '<span class="cursor-blink">█</span></h2>'
-                '<div style="color: var(--text-mute); font-size: 0.85rem; margin-top: 0.6rem;">'
-                'click a skill · press run · or type any prompt'
-                '</div></div>',
-                unsafe_allow_html=True,
-            )
+        # else: no output and no run in progress — render nothing (skip the
+        # idle "run a skill to begin" placeholder card)
 
     def _clear_output():
         st.session_state.last_output = ""
@@ -2884,6 +3810,59 @@ with col_main:
             render_hero_idle()
         render_last_output()
 
+        # ——— 7-DAY SKILL HISTORY (expandable) ———
+        _history_runs = list_runs_last_n_days(7)
+        _hist_count = len(_history_runs)
+        _hist_label = (
+            f"skill history · last 7 days  ·  {_hist_count} run{'s' if _hist_count != 1 else ''}"
+            if _hist_count
+            else "skill history · last 7 days  ·  no runs yet"
+        )
+        with st.expander(_hist_label, expanded=False):
+            if not _history_runs:
+                st.markdown(
+                    '<div style="color: var(--fg-dim); font-size: 0.85rem;">'
+                    'no skill runs in the last 7 days. once you run a skill, the output '
+                    'will be saved here automatically.'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                for _run_path in _history_runs:
+                    _parsed = parse_run_file(_run_path)
+                    _when_dt = datetime.fromtimestamp(_run_path.stat().st_mtime)
+                    _when_str = _when_dt.strftime("%b %d · %H:%M")
+                    _skill = _parsed["skill"]
+                    _uri = obsidian_uri(_run_path)
+                    _inner_label = f"{_when_str}  ·  {_skill}"
+                    with st.expander(_inner_label, expanded=False):
+                        if _parsed["prompt_short"]:
+                            st.markdown(
+                                f'<div style="color: var(--fg-mute); font-size: 0.72rem; '
+                                f'text-transform: uppercase; letter-spacing: 0.08em; '
+                                f'margin-bottom: 0.3rem;">prompt</div>'
+                                f'<div style="color: var(--fg-dim); font-size: 0.78rem; '
+                                f'background: var(--bg-elev); padding: 0.5rem 0.7rem; '
+                                f'border-radius: 4px; margin-bottom: 0.6rem; font-family: monospace;">'
+                                f'{html_escape(_parsed["prompt_short"])}{"..." if len(_parsed["prompt_short"]) >= 200 else ""}'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+                        st.markdown(
+                            f'<div style="color: var(--fg-mute); font-size: 0.72rem; '
+                            f'text-transform: uppercase; letter-spacing: 0.08em; '
+                            f'margin-bottom: 0.3rem;">output</div>',
+                            unsafe_allow_html=True,
+                        )
+                        st.markdown(_parsed["output"])
+                        st.markdown(
+                            f'<div style="margin-top: 0.6rem;">'
+                            f'<a href="{_uri}" target="_blank" style="color: var(--accent); '
+                            f'font-size: 0.78rem;">◆ open in obsidian ↗</a>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+
     # ——— UNIFIED PROMPT + SKILL CHIPS (hidden during run — takeover UX) ———
     if "prompt_input_widget" not in st.session_state:
         st.session_state.prompt_input_widget = ""
@@ -2908,7 +3887,9 @@ with col_main:
                 st.session_state.prompt_input_widget = _s["prompt_template"]
                 st.session_state.last_chip_label = _s["label"]
                 break
+        # Preserve the active brand when clearing the skill param
         st.query_params.clear()
+        st.query_params["brand"] = _active_brand
 
     if not st.session_state.running:
         st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
@@ -2945,7 +3926,12 @@ with col_main:
 
         # Skill chips — cpt-skill anchor grid grouped by category
         st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
-        skills_sorted = sorted(SKILLS, key=lambda s: s.get("category", "other"))
+        # Filter skills by active brand (showing brand-specific + shared)
+        _brand_skills = [
+            s for s in SKILLS
+            if s.get("brand") in (_active_brand, "shared")
+        ]
+        skills_sorted = sorted(_brand_skills, key=lambda s: s.get("category", "other"))
         _active = st.session_state.last_chip_label
         for category, group in groupby(skills_sorted, key=lambda s: s.get("category", "other")):
             group_list = list(group)
@@ -2957,7 +3943,7 @@ with col_main:
                 loaded = " loaded" if skill["label"] == _active else ""
                 grid_html += (
                     f'<a class="cpt-skill{loaded}" '
-                    f'href="?skill={quote(skill["label"])}" target="_self" '
+                    f'href="?brand={_active_brand}&skill={quote(skill["label"])}" target="_self" '
                     f'title="{html_escape(skill["description"])}">'
                     f'<span class="cpt-skill-name">{html_escape(skill["label"])}</span>'
                     f'<span class="cpt-skill-desc">{html_escape(skill["description"])}</span>'
