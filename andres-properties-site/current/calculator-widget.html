@@ -1,0 +1,71 @@
+<div class="calc-card">
+  <div class="calc-value-head">
+    <div class="calc-value-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg></div>
+    <div>
+      <h3>Your Home's Value</h3>
+      <p>Drag the slider to match your property's approximate value.</p>
+    </div>
+  </div>
+  <div class="calc-value-display" id="calc-value-display">$350,000</div>
+  <input type="range" min="100000" max="1000000" step="10000" value="350000" class="calc-slider" id="calc-slider" aria-label="Estimated home value">
+  <div class="calc-slider-range"><span>$100,000</span><span>$1,000,000</span></div>
+</div>
+
+<div class="calc-compare-grid">
+  <div class="calc-compare-card calc-traditional">
+    <div class="calc-compare-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/></svg>
+      <h4>The Traditional Route</h4>
+    </div>
+    <div class="calc-line-items">
+      <div class="calc-line"><span>Realtor Commission (5%)</span><span class="calc-neg" id="calc-t-commission">-$17,500</span></div>
+      <div class="calc-line"><span>Closing Costs (2%)</span><span class="calc-neg" id="calc-t-closing">-$7,000</span></div>
+      <div class="calc-line"><span>Repairs &amp; Updates (3%)</span><span class="calc-neg" id="calc-t-repairs">-$10,500</span></div>
+      <div class="calc-line"><span>Staging &amp; Prep</span><span class="calc-neg" id="calc-t-staging">-$3,000</span></div>
+      <div class="calc-line"><span>Holding Costs (3 mo.)</span><span class="calc-neg" id="calc-t-holding">-$10,500</span></div>
+    </div>
+    <div class="calc-line calc-line-total"><span>Total Costs</span><span class="calc-neg" id="calc-t-total">-$48,500</span></div>
+    <div class="calc-net-box calc-net-light">
+      <div class="calc-line"><span>Your Net</span><span class="calc-net-amount" id="calc-t-net">$301,500</span></div>
+      <div class="calc-days"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/></svg> ~90 days to close</div>
+    </div>
+  </div>
+
+  <div class="calc-compare-card calc-cash">
+    <div class="calc-badge">THE EASIER PATH</div>
+    <div class="calc-compare-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M9 12l2 2l4 -4"/></svg>
+      <h4>Selling to Andres Properties</h4>
+    </div>
+    <div class="calc-line-items">
+      <div class="calc-line"><span>Cash Offer</span><span class="calc-pos" id="calc-c-offer">$350,000</span></div>
+      <div class="calc-line"><span>Realtor Commission</span><span class="calc-pos calc-check">$0</span></div>
+      <div class="calc-line"><span>Closing Costs</span><span class="calc-pos calc-check">$0 <em>(We Cover It)</em></span></div>
+      <div class="calc-line"><span>Repairs &amp; Updates</span><span class="calc-pos calc-check">$0 <em>(Sold As-Is)</em></span></div>
+      <div class="calc-line"><span>Staging &amp; Prep</span><span class="calc-pos calc-check">$0</span></div>
+      <div class="calc-line"><span>Holding Costs</span><span class="calc-pos calc-check">$0</span></div>
+    </div>
+    <div class="calc-net-box calc-net-dark">
+      <div class="calc-line"><span>Your Net</span><span class="calc-net-amount" id="calc-c-net">$350,000</span></div>
+      <div class="calc-days calc-days-accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/></svg> Close in as little as 10 days!</div>
+    </div>
+  </div>
+</div>
+
+<div class="calc-summary">
+  <div class="calc-stat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6 -6l4 4l8 -8"/><path d="M14 7l7 0l0 7"/></svg>
+    <div class="calc-stat-value" id="calc-savings">$48,500</div>
+    <p>Potential Extra Savings</p>
+  </div>
+  <div class="calc-stat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4"/><path d="M18 14v4h4"/><path d="M14 18a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/></svg>
+    <div class="calc-stat-value">80 days</div>
+    <p>Time Saved</p>
+  </div>
+</div>
+
+<div class="calc-cta">
+  <p>Ready to see a real number for your property?</p>
+  <a href="https://powderblue-trout-602145.hostingersite.com/#contact" class="calc-cta-button">Get My Cash Offer</a>
+</div>

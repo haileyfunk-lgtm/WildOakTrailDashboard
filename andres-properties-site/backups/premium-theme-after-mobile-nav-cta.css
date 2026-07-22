@@ -1,0 +1,620 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Work+Sans:wght@400;500;600;700&display=swap');
+
+:root{
+  --navy:#071337;
+  --navy-2:#07173C;
+  --copper:#D1853F;
+  --copper-2:#D38F4E;
+  --cream:#F7F5F2;
+  --tan:#E8C3A1;
+  --ink-soft:#4A4A4A;
+}
+
+/* ---------- Full-width sections: background stretches edge-to-edge.
+   Two layers were boxing content: (1) Elementor's own per-section default
+   "boxed" width -- fixed by setting layout:"full_width" on every section
+   in the generator; (2) Astra's theme-level .ast-container wrapper, which
+   boxes the whole content area regardless of Elementor's section setting.
+   This page (Home, page-id-6) needs #2 neutralized; other pages keep
+   Astra's normal boxed reading width. ---------- */
+.page-id-6 .ast-container{
+  max-width: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.elementor-section.elementor-section-full_width > .elementor-container{
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  /* A single narrower column (Meet Jason 80%, FAQ 70%, etc.) otherwise hugs
+     the left edge of the row instead of centering -- Elementor's row
+     defaults to justify-content:flex-start. This has no effect on rows
+     whose columns already sum to 100% width, so it's safe globally. */
+  justify-content: center;
+}
+
+/* Header: logo/nav were sitting flush against the viewport edge with no
+   side margin at wide widths. NOTE: needs !important -- the .page-id-6
+   .ast-container full-width reset above also matches this element (it's
+   both .site-primary-header-wrap AND .ast-container) and was winning the
+   tie on source order because that rule carries !important and this one
+   didn't. */
+.site-header .ast-container,
+.site-header .site-primary-header-wrap{
+  padding-left: 64px !important;
+  padding-right: 64px !important;
+  box-sizing: border-box;
+}
+@media (max-width: 767px){
+  .site-header .ast-container,
+  .site-header .site-primary-header-wrap{
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
+/* ---------- Typography ---------- */
+h1, h2, h3, h4, h5, h6,
+.elementor-heading-title {
+  font-family: 'Newsreader', Georgia, serif !important;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  font-weight: 500 !important;
+}
+body, p, li, a, .elementor-widget-text-editor, .elementor-button {
+  font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.elementor-button {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+/* ---------- Footer: background was never set, defaulting to Astra's
+   light-gray theme default -- but footer widget text colors (cream/copper)
+   were designed for a navy backdrop, making them nearly illegible. ---------- */
+.site-footer, #colophon,
+.site-footer .site-primary-footer-wrap,
+.site-footer .site-below-footer-wrap,
+.site-footer .ast-builder-grid-row-container-inner,
+.site-footer .ast-builder-footer-grid-columns{
+  background-color: var(--navy-2) !important;
+}
+.site-footer .ast-footer-copyright,
+.site-footer .ast-footer-copyright p{
+  color: #FFFFFF !important;
+}
+.site-footer .ast-footer-copyright a{
+  color: var(--copper-2) !important;
+}
+
+/* Side padding: the .page-id-6 .ast-container reset further up this file
+   (max-width:none, padding:0) strips Astra's default container padding
+   sitewide so Elementor sections can go edge-to-edge under their own
+   per-section padding -- the header got an equivalent manual padding
+   compensation for the same reason, but the footer never did, so its
+   content (logo, links, copyright) was sitting flush against the
+   viewport edge with nothing to stop it. Matches the 40px/24px Elementor
+   sections already use at desktop/mobile. */
+.site-footer .ast-builder-grid-row-container-inner{
+  padding-left: 40px;
+  padding-right: 40px;
+  box-sizing: border-box;
+}
+@media (max-width: 767px){
+  .site-footer .ast-builder-grid-row-container-inner{
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* Footer columns: Astra's footer builder was rendering the 2 widget areas
+   (logo+tagline, Quick Links/Contact) stacked full-width on top of each
+   other instead of side by side -- its grid-row CSS uses no !important, so
+   force a row layout directly rather than fight the theme's internal
+   "stack" option semantics. */
+.site-footer .ast-builder-footer-grid-columns{
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  column-gap: 60px;
+  row-gap: 40px;
+}
+.site-footer .site-footer-primary-section-1{
+  flex: 0 0 340px !important;
+  max-width: 340px;
+}
+.site-footer .site-footer-primary-section-2{
+  flex: 1 1 auto !important;
+}
+@media (max-width: 767px){
+  .site-footer .site-footer-primary-section-1{
+    flex-basis: 100% !important;
+    max-width: 100%;
+  }
+}
+
+/* ---------- Header (match approved mockup: cream bg, compact logo, minimal nav + glowing CTA) ---------- */
+.site-header, #masthead, .ast-primary-header-bar, .ast-above-header, .site-primary-header-wrap{
+  background-color: var(--cream) !important;
+}
+/* Sticky header -- stays visible while scrolling. No Astra "sticky" option
+   was configured (checked astra-settings/theme_mods_astra, neither has a
+   sticky-header key set), so this is a plain CSS position:sticky on the
+   outer #masthead element rather than depending on a theme setting.
+   #masthead already wraps both the desktop and mobile header markup
+   (only one is display:block at a given width), so one rule covers both. */
+#masthead{
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  width: 100%;
+}
+.site-header .custom-logo-link img{
+  height: 70px !important;
+  width: auto !important;
+  max-height: 70px !important;
+}
+.main-header-menu .menu-item.nav-cta-button{
+  margin-left: 8px;
+}
+.main-header-menu .menu-item.nav-cta-button > a{
+  background: var(--copper) !important;
+  color: #fff !important;
+  padding: 12px 24px !important;
+  border-radius: 999px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 12px rgba(209,133,63,0.28);
+  animation: ctaGlow 2.6s ease-in-out infinite;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: auto !important;
+  width: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  line-height: 1.4 !important;
+  white-space: nowrap;
+  flex: 0 0 auto !important;
+}
+/* Mobile popup menu: Astra's menu block is deliberately excluded from its
+   own popup content padding (".ast-mobile-popup-content ...:not(.ast-
+   builder-menu)"), so plain links (FAQ, Reviews) sit flush edge-to-edge on
+   purpose as full-width tap rows. The CTA pill inherited that same flush
+   width though, which just clips its own border-radius into a flat bar
+   instead of reading as a button. Give this one item side margin so the
+   pill shape actually shows. */
+@media (max-width: 921px){
+  .main-header-menu.stack-on-mobile .menu-item.nav-cta-button{
+    margin: 12px 20px !important;
+    width: auto !important;
+  }
+  .main-header-menu.stack-on-mobile .menu-item.nav-cta-button > a{
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+}
+.main-header-menu .menu-item.nav-cta-button > a:hover{
+  background: var(--navy) !important;
+  transform: translateY(-2px);
+}
+
+.kicker{
+  display:flex; align-items:center; gap:12px;
+  color: var(--copper);
+  font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  font-family:'Work Sans', sans-serif;
+}
+.kicker::before{ content:""; width:28px; height:1px; background: var(--copper); display:inline-block; }
+.kicker.on-dark{ color:#D38F4E; }
+.kicker.on-dark::before{ background:#D38F4E; }
+.kicker.kicker-navy{ color: var(--navy); }
+.kicker.kicker-navy::before{ background: var(--navy); }
+
+/* Meet Jason's kicker centered over "A local investor..." below it --
+   both the heading and everything else in this column (photo, paragraph,
+   quote) are already center-aligned; the kicker is a flex row (dash +
+   label) that defaults to flex-start, so it was sitting at the left edge
+   of the column instead of centered like its neighbors. */
+#meet-jason .kicker{ justify-content: center; }
+
+/* ---------- Section backgrounds (by element ID -- see note in andres-properties memory:
+   raw-injected Elementor "css_classes" on sections/columns is unreliable, ID selectors work) ---------- */
+#home{
+  position: relative;
+  background:
+    radial-gradient(circle 210px at 88% -6%, rgba(209,133,63,0.14), transparent 70%),
+    linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%) !important;
+  overflow: hidden;
+}
+#process{ background: var(--cream) !important; }
+#meet-jason{
+  position: relative;
+  background: var(--navy) !important;
+  overflow: hidden;
+}
+#meet-jason::before{
+  content:""; position:absolute; top:-120px; right:-120px; width:400px; height:400px;
+  border-radius:50%; background:rgba(122,169,224,0.12); pointer-events:none;
+}
+#meet-jason::after{
+  content:""; position:absolute; bottom:-160px; left:-120px; width:420px; height:420px;
+  border-radius:50%; background:rgba(209,133,63,0.09); pointer-events:none;
+}
+#situations{ background: var(--cream) !important; }
+#case-study{ background: var(--navy) !important; }
+#reviews{ background: var(--cream) !important; }
+#faq{ background: #FFFFFF !important; }
+#contact{
+  position: relative;
+  background: var(--navy) !important;
+  overflow: hidden;
+}
+#contact::before{
+  content:""; position:absolute; bottom:-160px; left:-160px; width:420px; height:420px;
+  border-radius:50%; background:rgba(209,133,63,0.07); pointer-events:none;
+}
+
+/* ---------- Hero spacing fixes ----------
+   1) The subtext paragraph had no max-width, so it ran almost the full
+      column width before wrapping -- one very long line followed by a
+      short 3-word orphan ("showings, no pressure."). Constraining it to
+      a normal reading measure wraps it into more even lines.
+   2) The photo column is taller than the text column (photo + caption
+      card vs. kicker/heading/subtext/CTAs/badges), and the text column
+      was top-aligned, so the extra height collected as dead navy space
+      below the trust badges instead of being distributed evenly. Centering
+      the text column vertically within the row spreads that space above
+      and below instead, matching how Meet Jason's column is already
+      vertically centered elsewhere on the page. (ID-based selectors here
+      because raw _css_classes on columns/sections render unreliably in
+      this Elementor version -- see note further up this file.) */
+.elementor-element-9b3654b p{ max-width: 540px; }
+.elementor-element-4088e15 > .elementor-widget-wrap{ justify-content: center; }
+
+/* ---------- Trust badges (hero) ---------- */
+.trust-badges{ display:flex; align-items:center; gap:32px; flex-wrap:wrap; }
+.trust-badge{
+  font-size:14px; font-weight:500; letter-spacing:0.3px; color:#FFFFFF;
+  display:flex; align-items:center; gap:10px; font-family:'Work Sans', sans-serif;
+}
+.trust-badge .dot{
+  width:7px; height:7px; border-radius:50%; background:#D38F4E; display:inline-block;
+  animation: dotGlow 2s ease-in-out infinite;
+}
+.trust-badge:nth-child(2) .dot{ animation-delay: 0.66s; }
+.trust-badge:nth-child(3) .dot{ animation-delay: 1.33s; }
+@keyframes dotGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(211,143,78,0.5); opacity: 0.7; }
+  50% { box-shadow: 0 0 10px 3px rgba(211,143,78,0.8); opacity: 1; }
+}
+
+/* ---------- Glowing CTA button variant ---------- */
+.cta-glow .elementor-button{
+  animation: ctaGlow 2.6s ease-in-out infinite;
+}
+@keyframes ctaGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(209,133,63,0.0), 0 4px 12px rgba(209,133,63,0.28); }
+  50% { box-shadow: 0 0 22px 5px rgba(209,133,63,0.55), 0 4px 12px rgba(209,133,63,0.28); }
+}
+
+/* ---------- Framed photo with offset border (hero + meet-jason) ---------- */
+.framed-photo{ position:relative; display:inline-block; }
+.framed-photo::before{
+  content:""; position:absolute; top:24px; left:-24px; width:100%; height:100%;
+  border:1.5px solid var(--copper); border-radius:14px; z-index:0;
+}
+.framed-photo img{
+  position:relative; z-index:1; border-radius:14px; display:block;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+  max-width: none !important;
+}
+.framed-photo.rounded::before{ border-radius:14px; }
+.framed-photo.rounded img{ border-radius:14px; }
+/* Caption card sits compact, tucked over the photo's lower-left corner --
+   smaller and higher than the earlier version, which pushed it too far
+   below the frame into empty space. */
+.photo-caption-card{
+  position:absolute; bottom:18px; left:-16px; z-index:2;
+  background: var(--cream); padding:10px 16px; border-radius:6px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.25);
+}
+.photo-caption-card .name{ font-family:'Newsreader', serif; font-size:14px; color:var(--navy); font-weight:600; }
+.photo-caption-card .role{ font-size:11px; color:#8b7355; }
+
+/* ---------- Process cards: "stepped badge" treatment ----------
+   v3: cards are now even (no ascending stagger -- v2's translateY steps
+   made the row look uneven rather than deliberate), with a single shared
+   box-shadow. Corners rounded further, padding and min-height tightened
+   to cut the dead space under shorter card copy, and the badge/title
+   sized up for legibility. Rail-draw-in + badge-pulse animation (wired to
+   the same .reveal-scale/.is-visible scroll system used elsewhere on the
+   page) is unchanged -- that's the part that tested well. */
+.process-card{
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid rgba(7,19,55,0.09);
+  border-radius: 20px;
+  padding: 56px 26px 26px 26px;
+  box-sizing: border-box;
+  overflow: visible;
+  text-align: left;
+  /* Same fixed-height rationale as elsewhere on this page: Elementor's
+     column stretch doesn't reliably equalize row heights, so min-height +
+     flex column + flex-start keeps content top-anchored and uniform.
+     Trimmed from 280px now that padding is tighter and cards sit level. */
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-shadow: 0 14px 30px rgba(7,19,55,0.07);
+  transition: transform .35s cubic-bezier(.2,.65,.3,1), box-shadow .35s cubic-bezier(.2,.65,.3,1);
+}
+.process-card:hover{ transform: translateY(-10px); box-shadow: 0 20px 42px rgba(7,19,55,0.13); }
+
+/* The connecting rail: a copper line under the badge. v3 spanned true
+   edge-to-edge (left:0/right:0), which cut straight across the card's
+   rounded corners and visibly poked out past the rounded silhouette on
+   both sides -- a straight line can't span a curved edge without escaping
+   it. Inset instead, matching the badge/text left offset, so the rail
+   stays within the flat part of the top edge and reads as anchored to the
+   card rather than an overhanging stray line. Still draws in via scaleX
+   on scroll reveal. */
+.process-card::before{
+  content:""; position:absolute; left:26px; right:26px; top:0; height:2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(209,133,63,0.55) 20%, rgba(209,133,63,0.55) 80%, transparent 100%);
+  z-index:0;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1s cubic-bezier(.2,.65,.3,1);
+}
+.reveal-scale.is-visible .process-card::before{ transform: scaleX(1); }
+
+/* Step badge: the actual sequence indicator, pinned half-on/half-off the
+   card's top edge so it reads as a marker threaded onto the rail, not a
+   watermark buried in the corner. Navy fill + copper numeral matches the
+   badge treatment already used for the photo-caption card and testimonial
+   avatars elsewhere on this page. */
+.process-step-badge{
+  position:absolute; top:-30px; left:26px; z-index:2;
+  width:60px; height:60px; border-radius:50%;
+  background: var(--navy);
+  border: 3px solid var(--cream);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 8px 20px rgba(7,19,55,0.22);
+}
+.process-step-num{
+  font-family:'Newsreader', serif; font-style: italic; font-weight: 600;
+  font-size: 30px; line-height:1; color: var(--copper-2);
+}
+/* Gentle pulse once revealed -- reuses the exact glow language of the hero
+   trust-badge dots (same color, same easing) so the motion reads as one
+   consistent system rather than a one-off flourish. Runs continuously but
+   softly; a per-card phase offset keeps three badges from pulsing in
+   lockstep. */
+.reveal-scale.is-visible .process-step-badge{
+  animation: processBadgePulse 2.6s ease-in-out infinite;
+}
+.process-card-2 .process-step-badge{ animation-delay: .5s; }
+.process-card-3 .process-step-badge{ animation-delay: 1s; }
+@keyframes processBadgePulse{
+  0%, 100% { box-shadow: 0 8px 20px rgba(7,19,55,0.22), 0 0 0 0 rgba(211,143,78,0.45); }
+  50% { box-shadow: 0 8px 20px rgba(7,19,55,0.22), 0 0 0 7px rgba(211,143,78,0); }
+}
+
+.process-card h3{
+  font-family:'Newsreader', serif !important; font-size:26px; font-weight:500 !important;
+  color: var(--navy); margin: 0 0 10px 0; position:relative; z-index:1;
+}
+.process-card p{
+  font-size:15px; line-height:1.6; color:#5a6272; margin:0; max-width:260px;
+  position:relative; z-index:1;
+}
+
+@media (max-width: 767px){
+  .process-card:hover{ transform: translateY(-6px); }
+  .process-step-badge{ width:48px; height:48px; top:-24px; }
+  .process-step-num{ font-size:24px; }
+  .process-card h3{ font-size:22px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .process-card::before{ transition: none; transform: scaleX(1); }
+  .reveal-scale.is-visible .process-step-badge{ animation: none; }
+}
+
+/* ---------- Situation cards ---------- */
+.situation-card{
+  background:#FFFFFF; padding:38px 32px; border-radius:12px;
+  box-shadow:0 2px 4px rgba(7,19,55,0.05), 0 12px 24px rgba(7,19,55,0.09);
+  position:relative; overflow:hidden; transition:transform 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+  /* Same fix as .glass-card -- Elementor's column stretch isn't reliably
+     equalizing row heights here, so a fixed min-height guarantees it.
+     Content stays top-anchored (not centered) so badges/headings still
+     line up across the row regardless of description length. */
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.situation-card:hover{ transform:translateY(-6px); box-shadow:0 4px 8px rgba(7,19,55,0.06), 0 24px 44px rgba(7,19,55,0.16); }
+.situation-card .bar{ position:absolute; top:0; left:0; width:100%; height:3px; }
+.situation-card .badge{ width:54px; height:54px; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:22px; }
+.situation-card .badge svg{ width:28px; height:28px; }
+.situation-card h3{ font-family:'Newsreader', serif !important; font-size:23px; color:var(--navy); margin:0 0 12px 0; font-weight:600 !important; letter-spacing:-0.01em; }
+.situation-card p{ font-size:15px; line-height:1.65; color:#4a5160; margin:0; }
+/* All six cards describe equally-valid situations -- there's no real
+   grouping or hierarchy between them, so the copper/navy alternation was
+   arbitrary rather than meaningful, and it broke the single-accent rule
+   copper follows everywhere else on the page (buttons, kicker labels,
+   badges, dots). Both variants now render identically in copper; the
+   navy selector is kept so the markup doesn't need to change. */
+.situation-accent-copper .bar,
+.situation-accent-navy .bar{ background:linear-gradient(90deg,#D1853F,#E8C3A1); }
+.situation-accent-copper .badge,
+.situation-accent-navy .badge{ background:rgba(209,133,63,0.12); color:#D1853F; }
+
+/* ---------- Case study / meet-jason photo frame variant already covered by .framed-photo above ---------- */
+
+/* ---------- Reviews placeholder ---------- */
+.reviews-placeholder{
+  text-align:center; font-size:17px; color:#5a4a3a; font-style:italic;
+  font-family:'Newsreader', serif; padding: 20px 0;
+}
+.reviews-placeholder-note{
+  text-align:center; font-size:17px; color:#8b7355; font-style:italic;
+  font-family:'Work Sans', sans-serif; padding: 0 0 10px;
+}
+
+/* ---------- Reviews marquee (example content until real reviews arrive) ---------- */
+.marquee-mask{
+  overflow:hidden; position:relative; width:100%;
+  -webkit-mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.marquee-track{
+  display:flex; gap:24px; width:max-content;
+  animation: reviewScroll 40s linear infinite;
+  padding: 4px 0;
+}
+.marquee-mask:hover .marquee-track{ animation-play-state: paused; }
+@keyframes reviewScroll{
+  from{ transform: translateX(0); }
+  to{ transform: translateX(-50%); }
+}
+.testimonial-card{
+  /* Solid white + a visible border/shadow -- these cards sit on the
+     #reviews section, which is now cream (var(--cream)) too, so the old
+     cream-on-cream card fill had almost no contrast against its backdrop.
+     Border tinted blue (the same accent used behind Jason's photo in
+     Meet Jason) instead of plain navy-tinted, at low opacity so it reads
+     as a faded outline rather than a hard rule. */
+  flex: 0 0 auto; width: 300px; background:#FFFFFF; padding:30px 26px;
+  border-radius:10px; border:1.5px solid rgba(122,169,224,0.4);
+  box-shadow: 0 4px 10px rgba(7,19,55,0.05), 0 20px 42px rgba(7,19,55,0.14);
+  position:relative;
+}
+.testimonial-card .quote-mark{
+  font-family:'Newsreader', serif; font-size:50px; color:var(--tan); line-height:1;
+  position:absolute; top:14px; right:22px;
+}
+.testimonial-card p{
+  font-size:15px; line-height:1.6; color:#3d4451; margin:0 0 20px 0; position:relative; z-index:1;
+}
+.testimonial-attribution{ display:flex; align-items:center; gap:12px; }
+.testimonial-attribution .avatar{
+  width:36px; height:36px; border-radius:50%; background:var(--navy); color:var(--cream);
+  font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center;
+  font-family:'Newsreader', serif;
+}
+.testimonial-attribution .testimonial-name{ font-size:13px; font-weight:600; color:var(--navy); }
+@media (max-width: 767px){
+  .testimonial-card{ width: 260px; }
+}
+
+/* ---------- Decorative (non-functional) contact form ---------- */
+.decorative-form{ display:flex; flex-direction:column; gap:16px; text-align:left; max-width:520px; margin:0 auto; }
+.decorative-form input, .decorative-form textarea{
+  padding:16px; border-radius:2px; border:1px solid #2a3350; background:#0e1a3c; color:var(--cream);
+  font-size:15px; font-family:'Work Sans', sans-serif; width:100%;
+}
+.decorative-form textarea{ resize:vertical; }
+.decorative-form button{
+  background: var(--copper); color:#fff; border:none; padding:17px; border-radius:999px;
+  font-size:16px; font-weight:600; cursor:pointer; margin-top:8px; font-family:'Work Sans', sans-serif;
+  box-shadow:0 6px 16px rgba(209,133,63,0.32); transition:transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.decorative-form button:hover{ background:#D38F4E; transform:translateY(-3px); box-shadow:0 12px 26px rgba(209,133,63,0.45); }
+
+/* ---------- Buttons (site-wide) ---------- */
+.elementor-button{
+  border-radius: 999px !important;
+  box-shadow: 0 6px 16px rgba(209,133,63,0.28);
+  transition: transform .25s ease, box-shadow .25s ease, background-color .25s ease !important;
+}
+.elementor-button:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(209,133,63,0.36);
+}
+
+/* ---------- Accordion (FAQ) ---------- */
+.elementor-accordion-item{
+  border: none !important;
+  border-bottom: 1px solid var(--tan) !important;
+  border-radius: 0 !important;
+  margin-bottom: 0;
+  background: transparent;
+}
+.elementor-tab-title{
+  padding: 22px 0 !important;
+  font-weight: 600;
+}
+.elementor-tab-content{
+  padding: 0 0 22px 0 !important;
+}
+
+/* ---------- Scroll reveal ---------- */
+.reveal-up{
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .9s cubic-bezier(.2,.65,.3,1), transform .9s cubic-bezier(.2,.65,.3,1);
+}
+.reveal-up.is-visible{
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-scale{
+  opacity: 0;
+  transform: translateY(24px) scale(0.94);
+  transition: opacity .6s ease, transform .6s cubic-bezier(.34,1.56,.64,1);
+}
+.reveal-scale.is-visible{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+/* Staggered load-in for grouped cards (process steps 1/2/3) so they
+   animate in sequentially rather than all at once. */
+.reveal-scale.stagger-1{ transition-delay: 0s !important; }
+.reveal-scale.stagger-2{ transition-delay: .18s !important; }
+.reveal-scale.stagger-3{ transition-delay: .36s !important; }
+
+/* ---------- Mobile fixes ---------- */
+@media (max-width: 767px){
+  /* The desktop fix for .framed-photo img (max-width:none, needed to stop a
+     flex/percentage-width collapse bug) breaks mobile by holding photos at
+     their fixed 360-480px desktop width, overflowing a 390px viewport and
+     pushing a horizontal scrollbar that clips text on every section. */
+  .framed-photo{ width: 100% !important; max-width: 420px; margin-left: auto; margin-right: auto; }
+  .framed-photo img{ max-width: 100% !important; width: 100% !important; height: auto !important; }
+  /* Previously hidden outright here because the old fixed desktop offset
+     (top:24px/left:-24px) was sized for the old fixed-width image and
+     overflowed a 390px viewport. Now that .framed-photo itself is capped
+     to 100%/420px above, a smaller offset fits safely within the section's
+     24px side padding instead of needing to disappear. */
+  .framed-photo::before{ top: 8px; left: -8px; }
+  /* Card flows below the image on mobile (position:static) instead of the
+     desktop absolute overlap. The old -20px pull-up exceeded the card's
+     own 10px top padding, so it cut across the "Jason Andres" name line
+     instead of just tucking under the image corner. A small positive gap
+     avoids clipping the text entirely. */
+  .photo-caption-card{ position: static; margin-top: 12px; margin-left: 16px; display: inline-block; }
+
+  body{ overflow-x: hidden; }
+  .elementor-section{ padding-left: 24px !important; padding-right: 24px !important; }
+  .hero-anim-host{ margin: 0 auto; }
+
+  /* Footer, widget 2: "Quick Links" and "Contact" are two divs in one
+     flex row with gap:60px (set inline on the widget markup), sized for
+     side-by-side desktop spacing. On mobile flex-wrap drops them onto
+     separate lines, turning that same 60px into an oversized vertical gap
+     between the two stacked blocks. Also tightens the gap between the
+     logo/tagline widget and this one, which compounds with the theme's
+     own widget margin to read as uneven on a single narrow column. */
+  .site-footer-primary-section-2 .textwidget > div{ gap: 28px !important; }
+  .site-footer .ast-builder-footer-grid-columns{ row-gap: 28px; }
+}

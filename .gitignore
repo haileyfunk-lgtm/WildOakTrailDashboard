@@ -29,3 +29,10 @@ yt.py
 hn.py
 _oauth_once.py
 assets/_recolor.py
+
+# Andres Properties site — never commit server credentials or SSH keys
+andres-properties-site/credentials/
+*.pem
+id_rsa*
+*_ssh_key
+*_ssh_key.pub

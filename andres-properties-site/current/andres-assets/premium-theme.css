@@ -1,0 +1,1349 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Work+Sans:wght@400;500;600;700&display=swap');
+
+:root{
+  /* Brightness pass, benchmarked against rankandfound.com.
+     That site reads bright for three measurable reasons, none of which are
+     "it uses white":
+       1. its base is #FBFCFD, luminance 0.972
+       2. its darkest ink is #1A2030, luminance 0.015 -- a SOFT near-black,
+          not a saturated near-black
+       3. its primary button is #1E56A0, a mid tone rather than a heavy one
+     Andres was at cream 0.915 and navy 0.008: a darker floor and a much
+     heavier ceiling. The values below lift both ends toward that system
+     while staying warm, which is the part of this brand worth keeping and
+     the part rankandfound doesn't have.
+     --navy is now luminance 0.015, an exact match for their ink. */
+  --navy:#16203C;
+  --navy-2:#131C36;   /* footer, a touch deeper so it still anchors */
+  --copper:#D1853F;
+  --copper-2:#D38F4E;
+  /* Section bands. Went #F7F5F2 -> #F9F7F3 -> #FDFBF7 chasing rankandfound's
+     0.972 base, and is now back at the original #F7F5F2 by preference.
+     The trade that comes back with it is band separation: cream against
+     white is 1.088:1 here versus 1.034:1 at the lightest value, so the
+     alternation between sections is roughly three times more legible. The
+     page reads warmer and more defined, less bright. */
+  --cream:#F7F5F2;
+  --tan:#E8C3A1;
+  --ink-soft:#4A4A4A;
+  /* Secondary accent. A single hue meaning "this is the good outcome",
+     which is why it earns a place next to copper: it carries information
+     rather than decorating.
+     This was briefly a green; it's blue now at the client's call. #1E56A0
+     is rankandfound's own primary, which keeps this site's second accent
+     tied to the reference they're working from, and it sits in the same
+     family as the navy without being mistaken for it.
+     Two values because one of them lands on the navy calculator card:
+     --blue on light is 6.7:1, but would be far too dark on navy, so on-dark
+     gets its own lighter tone at 8.5:1.
+     --blue-line is the same hue at low alpha, for card borders. */
+  --blue:#1E56A0;
+  --blue-light:#8FC1F0;
+  --blue-line:rgba(30,86,160,0.32);
+
+  /* ---- Card system: one radius rule, one shadow rule ----
+     Radii were 10px (testimonial), 12px (situation) and 20px (process) for
+     three things doing the same job, which reads as nobody deciding. Two
+     documented tiers now: content cards take --radius-card, large panels
+     that contain their own layout (calculator card, summary, comparison
+     table) take --radius-panel. Bigger surface, bigger radius.
+
+     Shadows are LAYERED and TINTED, never a single flat grey blur.
+     Three stacked shadows approximate real light falloff -- a tight contact
+     shadow, a mid diffuse one, and a wide soft one -- and they're tinted to
+     the navy/blue of this palette rather than black, which is what stops
+     them reading as dirt on a light page.
+     The negative spreads are the important part. A shadow with 0 spread
+     bleeds sideways as far as it bleeds down, which is exactly what pooled
+     grey haze into the gaps between the testimonial cards when they sat
+     shoulder to shoulder. Pulling the spread negative tucks each shadow
+     under its own card so depth reads vertically without smearing into its
+     neighbour. */
+  --radius-card:14px;
+  --radius-panel:20px;
+  --shadow-card:
+    0 1px 2px rgba(22,32,60,0.05),
+    0 6px 14px -6px rgba(22,32,60,0.10),
+    0 16px 36px -14px rgba(30,86,160,0.16);
+  --shadow-card-hover:
+    0 2px 4px rgba(22,32,60,0.06),
+    0 12px 24px -8px rgba(22,32,60,0.13),
+    0 28px 56px -18px rgba(30,86,160,0.24);
+  /* Light-theme palette. The page was originally built as alternating
+     navy/cream bands; the client asked to drop the dark blue section
+     backgrounds entirely. Navy is now a *text and accent* colour rather
+     than a background -- it survives as a background only on the footer
+     (deliberate anchor at the bottom of an otherwise light page) and on
+     the two contrast panels noted further down (calc "cash offer" card,
+     comparison-table header row).
+     Bands are a strict cream/white alternation -- no tinted washes. The
+     hero and the header deliberately share one value so the two read as a
+     single continuous field with no seam between them; that value is now
+     white rather than cream (see the sticky header note further down). */
+  /* Body copy. Was #4A5160, a cool slate. Every paragraph on the page uses
+     this, so it was the single largest area of ink pulling the page cool
+     while copper did all the warming from thin accents. Retuned warm at
+     the same legibility (7.5:1 vs 7.3:1). This is the one place the
+     rankandfound benchmark is deliberately NOT followed -- their body is
+     #4A5368, also cool, which suits their brand and not this one. */
+  --ink-body:#585049;
+  /* Copper for TEXT sitting on a light background.
+     --copper (#D1853F) was picked to glow off navy and only ever appeared
+     as small text there. Against the new light bands it measures 2.5-2.9:1,
+     which fails WCAG AA (4.5:1) at every size -- the section kickers and the
+     hero's italic emphasis were genuinely hard to read. This darker tone
+     holds 4.7:1 or better on all four light backgrounds while still reading
+     as the same copper.
+     Use --copper-ink for copper *text*; keep --copper for copper *fills*
+     (buttons, rails, badge dots, the situation-card bars) where copper is
+     the background rather than the foreground. */
+  --copper-ink:#9A581F;
+  /* A lighter copper reserved for LARGE display type only -- currently just
+     the hero's italic "without the stress" at 58px. It lands at 3.4:1 on
+     cream, which clears WCAG's 3:1 bar for large text but NOT the 4.5:1 bar
+     for body copy. Don't reuse it on the kickers or any small text; those
+     stay on --copper-ink. */
+  --copper-display:#BA7532;
+}
+
+/* ---------- Full-width sections: background stretches edge-to-edge.
+   Two layers were boxing content: (1) Elementor's own per-section default
+   "boxed" width -- fixed by setting layout:"full_width" on every section
+   in the generator; (2) Astra's theme-level .ast-container wrapper, which
+   boxes the whole content area regardless of Elementor's section setting.
+   This page (Home, page-id-6) needs #2 neutralized; other pages keep
+   Astra's normal boxed reading width. ---------- */
+.page-id-6 .ast-container{
+  max-width: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.elementor-section.elementor-section-full_width > .elementor-container{
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  /* A single narrower column (Meet Jason 80%, FAQ 70%, etc.) otherwise hugs
+     the left edge of the row instead of centering -- Elementor's row
+     defaults to justify-content:flex-start. This has no effect on rows
+     whose columns already sum to 100% width, so it's safe globally. */
+  justify-content: center;
+}
+
+/* Header: logo/nav were sitting flush against the viewport edge with no
+   side margin at wide widths. NOTE: needs !important -- the .page-id-6
+   .ast-container full-width reset above also matches this element (it's
+   both .site-primary-header-wrap AND .ast-container) and was winning the
+   tie on source order because that rule carries !important and this one
+   didn't. */
+.site-header .ast-container,
+.site-header .site-primary-header-wrap{
+  padding-left: 64px !important;
+  padding-right: 64px !important;
+  box-sizing: border-box;
+}
+@media (max-width: 767px){
+  .site-header .ast-container,
+  .site-header .site-primary-header-wrap{
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
+/* ---------- Typography ---------- */
+h1, h2, h3, h4, h5, h6,
+.elementor-heading-title {
+  font-family: 'Newsreader', Georgia, serif !important;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  font-weight: 500 !important;
+}
+body, p, li, a, .elementor-widget-text-editor, .elementor-button {
+  font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.elementor-button {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+/* ---------- Footer: background was never set, defaulting to Astra's
+   light-gray theme default -- but footer widget text colors (cream/copper)
+   were designed for a navy backdrop, making them nearly illegible. ---------- */
+.site-footer, #colophon,
+.site-footer .site-primary-footer-wrap,
+.site-footer .site-below-footer-wrap,
+.site-footer .ast-builder-grid-row-container-inner,
+.site-footer .ast-builder-footer-grid-columns{
+  background-color: var(--navy-2) !important;
+}
+.site-footer .ast-footer-copyright,
+.site-footer .ast-footer-copyright p{
+  color: #FFFFFF !important;
+}
+.site-footer .ast-footer-copyright a{
+  color: var(--copper-2) !important;
+}
+
+/* Side padding: the .page-id-6 .ast-container reset further up this file
+   (max-width:none, padding:0) strips Astra's default container padding
+   sitewide so Elementor sections can go edge-to-edge under their own
+   per-section padding -- the header got an equivalent manual padding
+   compensation for the same reason, but the footer never did, so its
+   content (logo, links, copyright) was sitting flush against the
+   viewport edge with nothing to stop it. Matches the 40px/24px Elementor
+   sections already use at desktop/mobile. */
+.site-footer .ast-builder-grid-row-container-inner{
+  padding-left: 40px;
+  padding-right: 40px;
+  box-sizing: border-box;
+}
+@media (max-width: 767px){
+  .site-footer .ast-builder-grid-row-container-inner{
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* Footer columns: Astra's footer builder was rendering the 2 widget areas
+   (logo+tagline, Quick Links/Contact) stacked full-width on top of each
+   other instead of side by side -- its grid-row CSS uses no !important, so
+   force a row layout directly rather than fight the theme's internal
+   "stack" option semantics. */
+.site-footer .ast-builder-footer-grid-columns{
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  column-gap: 60px;
+  row-gap: 40px;
+}
+.site-footer .site-footer-primary-section-1{
+  flex: 0 0 340px !important;
+  max-width: 340px;
+}
+.site-footer .site-footer-primary-section-2{
+  flex: 1 1 auto !important;
+}
+@media (max-width: 767px){
+  .site-footer .site-footer-primary-section-1{
+    flex-basis: 100% !important;
+    max-width: 100%;
+  }
+}
+
+/* ---------- Header (match approved mockup: cream bg, compact logo, minimal nav + glowing CTA) ---------- */
+.site-header, #masthead, .ast-primary-header-bar, .ast-above-header, .site-primary-header-wrap{
+  background-color: #FFFFFF !important;
+}
+/* Sticky header -- stays visible while scrolling. No Astra "sticky" option
+   was configured (checked astra-settings/theme_mods_astra, neither has a
+   sticky-header key set), so this is a plain CSS position:sticky on the
+   outer #masthead element rather than depending on a theme setting.
+   #masthead already wraps both the desktop and mobile header markup
+   (only one is display:block at a given width), so one rule covers both. */
+#masthead{
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  width: 100%;
+}
+.site-header .custom-logo-link img{
+  height: 70px !important;
+  width: auto !important;
+  max-height: 70px !important;
+}
+.main-header-menu .menu-item.nav-cta-button{
+  margin-left: 8px;
+}
+.main-header-menu .menu-item.nav-cta-button > a{
+  background: var(--copper) !important;
+  color: #fff !important;
+  padding: 12px 24px !important;
+  border-radius: 999px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 12px rgba(209,133,63,0.28);
+  animation: ctaGlow 2.6s ease-in-out infinite;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: auto !important;
+  width: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  line-height: 1.4 !important;
+  white-space: nowrap;
+  flex: 0 0 auto !important;
+}
+/* Mobile popup menu: Astra's menu block is deliberately excluded from its
+   own popup content padding (".ast-mobile-popup-content ...:not(.ast-
+   builder-menu)"), so plain links (FAQ, Reviews) sit flush edge-to-edge on
+   purpose as full-width tap rows. The CTA pill inherited that same flush
+   width though, which just clips its own border-radius into a flat bar
+   instead of reading as a button. Give this one item side margin so the
+   pill shape actually shows. */
+@media (max-width: 921px){
+  .main-header-menu.stack-on-mobile .menu-item.nav-cta-button{
+    margin: 12px 20px !important;
+    width: auto !important;
+  }
+  .main-header-menu.stack-on-mobile .menu-item.nav-cta-button > a{
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+}
+.main-header-menu .menu-item.nav-cta-button > a:hover{
+  background: var(--navy) !important;
+  transform: translateY(-2px);
+}
+
+/* Kickers are 13px/700 uppercase with 2px tracking -- about the hardest
+   thing on the page to read -- and every one of them now sits on a light
+   band, so they all take --copper-ink. (This also picks up the kickers on
+   the sections that were already cream: they had the same contrast problem
+   before this redesign, and leaving those pale while the ex-navy ones went
+   dark would have split the page into two different-looking kicker styles.) */
+.kicker{
+  display:flex; align-items:center; gap:12px;
+  color: var(--copper-ink);
+  font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  font-family:'Work Sans', sans-serif;
+}
+.kicker::before{ content:""; width:28px; height:1px; background: var(--copper-ink); display:inline-block; }
+/* .on-dark is now a misnomer -- the three sections that use it (hero, meet
+   jason, case study) are all light. Kept as a class name so the Elementor
+   markup doesn't need editing, but it now carries the deeper copper: the
+   lighter --copper-2 was chosen to lift off navy and doesn't hold enough
+   contrast against a tint for small 13px uppercase text. */
+.kicker.on-dark{ color: var(--copper-ink); }
+.kicker.on-dark::before{ background: var(--copper-ink); }
+.kicker.kicker-navy{ color: var(--navy); }
+.kicker.kicker-navy::before{ background: var(--navy); }
+
+/* Meet Jason's kicker centered over "A local investor..." below it --
+   both the heading and everything else in this column (photo, paragraph,
+   quote) are already center-aligned; the kicker is a flex row (dash +
+   label) that defaults to flex-start, so it was sitting at the left edge
+   of the column instead of centered like its neighbors. */
+#meet-jason .kicker{ justify-content: center; }
+
+/* ---------- Section backgrounds (by element ID -- see note in andres-properties memory:
+   raw-injected Elementor "css_classes" on sections/columns is unreliable, ID selectors work) ---------- */
+/* Band order, top to bottom -- a strict cream/white alternation, so every
+   adjacent pair differs and section boundaries stay legible without needing
+   rules between them:
+     home        WHITE    process     cream    meet-jason  white
+     calculator  cream    situations  white    case-study  cream
+     compare     white    reviews     cream    faq         white
+     contact     cream  -> footer navy (the anchor)
+
+   The whole sequence is phase-shifted from where it started, because the
+   hero was asked to go white and Process directly below it was already
+   white -- leaving them adjacent would have merged the top of the page into
+   one undifferentiated block. Flipping every band keeps the alternation
+   intact and starts the page on the brighter of the two surfaces.
+   The header moves to white with the hero for the same reason it was cream
+   before: those two have to match, or the seam between them comes back.
+   The sections carrying no id (b5fe42e / fcdbd88 / 897a48d / 84c26ef) are
+   continuation rows of the block above them -- the Situations card grid and
+   the Reviews marquee -- so they have to move colour together with their
+   heading section or the block splits in half visually. */
+
+/* Hero is flat --cream, the exact value the header uses, with no gradient
+   or radial wash on top: any of those would make the top of the hero read
+   as a slightly different colour from the header sitting directly above it
+   and reintroduce the seam this is meant to remove. */
+#home{
+  position: relative;
+  background: #FFFFFF !important;
+  overflow: hidden;
+}
+/* 64c13fa is the card row belonging to the Process heading section -- it
+   carries its own background-color from Elementor, so it has to be named
+   explicitly or the block ends up half white, half cream. */
+#process,
+.elementor-element-64c13fa{ background: var(--cream) !important; }
+#meet-jason{
+  position: relative;
+  background: #FFFFFF !important;
+  overflow: hidden;
+}
+/* Two decorative blobs, deliberately one cool and one warm.
+   Both were originally blue, tuned to glow out of a navy field. They went
+   warm when this section was cream, because a pale blue on cream loses its
+   hue and reads as a grey smudge. The section is white now, which gives the
+   blue enough separation to actually read as blue, so the top-right one
+   goes back to it -- and pairing it with the warm blob at bottom-left is
+   what keeps the section from looking like a single flat wash.
+   Alpha is higher than the warm one because blue at equal alpha over white
+   reads fainter; 0.18 resolves to about #E7F0F9. */
+#meet-jason::before{
+  content:""; position:absolute; top:-120px; right:-120px; width:400px; height:400px;
+  border-radius:50%; background:rgba(122,169,224,0.18); pointer-events:none;
+}
+#meet-jason::after{
+  content:""; position:absolute; bottom:-160px; left:-120px; width:420px; height:420px;
+  border-radius:50%; background:rgba(209,133,63,0.07); pointer-events:none;
+}
+#situations,
+.elementor-element-b5fe42e,
+.elementor-element-fcdbd88,
+.elementor-element-897a48d{ background: #FFFFFF !important; }
+#case-study{ background: var(--cream) !important; }
+#reviews,
+.elementor-element-84c26ef{ background: var(--cream) !important; }
+#faq{ background: #FFFFFF !important; }
+#contact{
+  position: relative;
+  background: var(--cream) !important;
+  overflow: hidden;
+}
+/* Blue, matching the Meet Jason blob at the same alpha so the two decorative
+   circles on the page read as one device rather than two unrelated shapes.
+   This one sits on cream rather than white, which mutes it slightly -- worth
+   knowing, but not enough to justify a different value and a second number
+   to keep in sync. */
+#contact::before{
+  content:""; position:absolute; bottom:-160px; left:-160px; width:420px; height:420px;
+  border-radius:50%; background:rgba(122,169,224,0.18); pointer-events:none;
+}
+
+/* ---------- Hero spacing fixes ----------
+   1) The subtext paragraph had no max-width, so it ran almost the full
+      column width before wrapping -- one very long line followed by a
+      short 3-word orphan ("showings, no pressure."). Constraining it to
+      a normal reading measure wraps it into more even lines.
+   2) The photo column is taller than the text column (photo + caption
+      card vs. kicker/heading/subtext/CTAs/badges), and the text column
+      was top-aligned, so the extra height collected as dead navy space
+      below the trust badges instead of being distributed evenly. Centering
+      the text column vertically within the row spreads that space above
+      and below instead, matching how Meet Jason's column is already
+      vertically centered elsewhere on the page. (ID-based selectors here
+      because raw _css_classes on columns/sections render unreliably in
+      this Elementor version -- see note further up this file.) */
+.elementor-element-9b3654b p{ max-width: 540px; }
+.elementor-element-4088e15 > .elementor-widget-wrap{ justify-content: center; }
+
+/* ---------- Trust badges (hero) ---------- */
+.trust-badges{ display:flex; align-items:center; gap:32px; flex-wrap:wrap; }
+.trust-badge{
+  font-size:14px; font-weight:500; letter-spacing:0.3px; color: var(--navy);
+  display:flex; align-items:center; gap:10px; font-family:'Work Sans', sans-serif;
+}
+/* Static. These dots used to run a dotGlow pulse; see the note on the
+   process step badge below for why every perpetual loop on this page was
+   removed. */
+/* Green rather than copper: "No fees / No obligation / No pressure" are
+   reassurances, so they belong to the same positive language as the
+   comparison table's yes column. */
+.trust-badge .dot{
+  width:7px; height:7px; border-radius:50%; background:var(--blue); display:inline-block;
+  animation: dotGlow 2s ease-in-out infinite;
+}
+.trust-badge:nth-child(2) .dot{ animation-delay: 0.66s; }
+.trust-badge:nth-child(3) .dot{ animation-delay: 1.33s; }
+@keyframes dotGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(30,86,160,0.5); opacity: 0.75; }
+  50% { box-shadow: 0 0 10px 3px rgba(30,86,160,0.75); opacity: 1; }
+}
+
+/* Restored for the header CTA. Copper-based rather than blue, because it
+   glows off the copper pill itself. Only the header button uses it -- the
+   hero primary is solid navy now and the calculator's closing CTA is left
+   static, so there is one pulsing element on the page rather than five all
+   breathing at once. */
+@keyframes ctaGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(209,133,63,0.0), 0 4px 12px rgba(209,133,63,0.28); }
+  50% { box-shadow: 0 0 22px 5px rgba(209,133,63,0.55), 0 4px 12px rgba(209,133,63,0.28); }
+}
+
+/* Both restored loops collapse for anyone who has asked the OS to reduce
+   motion. Perpetual animation is exactly what that setting exists to stop,
+   and it can trigger nausea for vestibular-sensitive users. */
+@media (prefers-reduced-motion: reduce){
+  .trust-badge .dot,
+  .main-header-menu .menu-item.nav-cta-button > a{ animation: none !important; }
+  .reveal-scale.stagger-1,
+  .reveal-scale.stagger-2,
+  .reveal-scale.stagger-3{ transition-delay: 0s !important; }
+  /* Cards keep the depth change on hover but lose the movement. The shadow
+     shift is enough to confirm the hover; the translate is the part that
+     causes trouble for motion-sensitive users. */
+  .process-card:hover, .situation-card:hover,
+  .process-card:active, .situation-card:active{ transform: none !important; }
+}
+
+/* ---------- Framed photo with offset border (hero + meet-jason) ---------- */
+.framed-photo{ position:relative; display:inline-block; }
+.framed-photo::before{
+  content:""; position:absolute; top:24px; left:-24px; width:100%; height:100%;
+  border:1.5px solid var(--copper); border-radius:14px; z-index:0;
+}
+.framed-photo img{
+  position:relative; z-index:1; border-radius:14px; display:block;
+  /* Was a near-black 0.35 shadow, which only looked right sinking into a
+     navy field -- on a light background that reads as dirt around the
+     photo. Retinted to the navy ink at roughly half strength. */
+  box-shadow: 0 20px 48px rgba(7,19,55,0.16);
+  max-width: none !important;
+}
+.framed-photo.rounded::before{ border-radius:14px; }
+.framed-photo.rounded img{ border-radius:14px; }
+/* Caption card sits compact, tucked over the photo's lower-left corner --
+   smaller and higher than the earlier version, which pushed it too far
+   below the frame into empty space. */
+/* Cream fill + heavy shadow read as a card because it sat on navy. The hero
+   is now a pale tint, so cream-on-tint has almost no edge -- switched to
+   white with a hairline border so the card still detaches from both the
+   photo and the section behind it. */
+.photo-caption-card{
+  position:absolute; bottom:18px; left:-16px; z-index:2;
+  background:#FFFFFF; padding:10px 16px; border-radius:6px;
+  border:1px solid rgba(7,19,55,0.06);
+  box-shadow: 0 8px 22px rgba(7,19,55,0.14);
+}
+.photo-caption-card .name{ font-family:'Newsreader', serif; font-size:14px; color:var(--navy); font-weight:600; }
+.photo-caption-card .role{ font-size:11px; color:#8b7355; }
+
+/* ---------- Process cards: "stepped badge" treatment ----------
+   v3: cards are now even (no ascending stagger -- v2's translateY steps
+   made the row look uneven rather than deliberate), with a single shared
+   box-shadow. Corners rounded further, padding and min-height tightened
+   to cut the dead space under shorter card copy, and the badge/title
+   sized up for legibility. Rail-draw-in + badge-pulse animation (wired to
+   the same .reveal-scale/.is-visible scroll system used elsewhere on the
+   page) is unchanged -- that's the part that tested well. */
+.process-card{
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius-card);
+  padding: 56px 26px 26px 26px;
+  box-sizing: border-box;
+  overflow: visible;
+  text-align: left;
+  /* Same fixed-height rationale as elsewhere on this page: Elementor's
+     column stretch doesn't reliably equalize row heights, so min-height +
+     flex column + flex-start keeps content top-anchored and uniform.
+     Trimmed from 280px now that padding is tighter and cards sit level. */
+  height: 100%;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-shadow: var(--shadow-card);
+  transition: transform .35s cubic-bezier(.2,.65,.3,1), box-shadow .35s cubic-bezier(.2,.65,.3,1), border-color .35s ease;
+}
+.process-card:hover{ transform: translateY(-8px); box-shadow: var(--shadow-card-hover); border-color: rgba(30,86,160,0.55); }
+.process-card:active{ transform: translateY(-2px); box-shadow: var(--shadow-card); }
+
+/* The connecting rail: a copper line under the badge. v3 spanned true
+   edge-to-edge (left:0/right:0), which cut straight across the card's
+   rounded corners and visibly poked out past the rounded silhouette on
+   both sides -- a straight line can't span a curved edge without escaping
+   it. Inset instead, matching the badge/text left offset, so the rail
+   stays within the flat part of the top edge and reads as anchored to the
+   card rather than an overhanging stray line. Still draws in via scaleX
+   on scroll reveal. */
+.process-card::before{
+  content:""; position:absolute; left:26px; right:26px; top:0; height:2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(209,133,63,0.55) 20%, rgba(209,133,63,0.55) 80%, transparent 100%);
+  z-index:0;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1s cubic-bezier(.2,.65,.3,1);
+}
+.reveal-scale.is-visible .process-card::before{ transform: scaleX(1); }
+
+/* Step badge: the actual sequence indicator, pinned half-on/half-off the
+   card's top edge so it reads as a marker threaded onto the rail, not a
+   watermark buried in the corner. Navy fill + copper numeral matches the
+   badge treatment already used for the photo-caption card and testimonial
+   avatars elsewhere on this page. */
+.process-step-badge{
+  position:absolute; top:-30px; left:26px; z-index:2;
+  width:60px; height:60px; border-radius:50%;
+  background: var(--navy);
+  /* Ring matches whatever the badge overhangs. The badge is pinned half off
+     the card's top edge, so its upper arc sits on the SECTION rather than
+     the card -- and #process has flipped back to cream, so the ring follows
+     it. A white ring here would draw a visible arc on the cream. */
+  border: 3px solid var(--cream);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 8px 20px rgba(7,19,55,0.22);
+}
+.process-step-num{
+  font-family:'Newsreader', serif; font-style: italic; font-weight: 600;
+  font-size: 30px; line-height:1; color: var(--copper-2);
+}
+/* The step badges used to pulse continuously once revealed, matching a
+   dotGlow pulse on the hero trust badges and a ctaGlow pulse on every CTA.
+   All three are gone.
+   Ten perpetual loops were running at once, and the page's entire promise
+   is "no repairs, no showings, no pressure" -- constant pulsing reads as
+   urgency, which argues with the copy for an audience that is already
+   under stress. The one loop kept is the reviews marquee, which is
+   conveying real content (more reviews exist off-screen) rather than
+   decorating. One-shot scroll reveals are kept for the same reason: they
+   fire once and settle. */
+
+.process-card h3{
+  font-family:'Newsreader', serif !important; font-size:26px; font-weight:500 !important;
+  color: var(--navy); margin: 0 0 10px 0; position:relative; z-index:1;
+}
+.process-card p{
+  font-size:15px; line-height:1.6; color:#5a6272; margin:0; max-width:260px;
+  position:relative; z-index:1;
+}
+
+@media (max-width: 767px){
+  .process-card:hover{ transform: translateY(-6px); }
+  .process-step-badge{ width:48px; height:48px; top:-24px; }
+  .process-step-num{ font-size:24px; }
+  .process-card h3{ font-size:22px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .process-card::before{ transition: none; transform: scaleX(1); }
+}
+
+/* ---------- Situation cards ---------- */
+/* Cards again.
+   These were stripped to a bordered index during the editorial pass, on the
+   argument that they echoed the Process cards two sections up. Stripped
+   back, though, the six copper icon tiles became the only structure left in
+   the section and it read as a plain grid of orange squares. The card is
+   what the icons were sitting in, and without it they have nothing to sit
+   in. Restored -- but in the current card language (blue hairline, no grey
+   shadow) rather than the original grey-shadow one, so it matches the
+   testimonial and process cards instead of reintroducing the old style. */
+.situation-card{
+  background:#FFFFFF; padding:34px 30px; border-radius: var(--radius-card);
+  border:1.5px solid var(--blue-line);
+  box-shadow: var(--shadow-card);
+  position:relative; overflow:hidden; box-sizing: border-box;
+  /* Fills its column rather than sitting at its own content height -- see
+     the equal-height block below. min-height stays only as a floor for a
+     row where every card is short; it is no longer what equalises them. */
+  height: 100%;
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+}
+/* Hover lift returns as well. Shadow appears only on hover -- that's
+   feedback for a deliberate action, not the ambient grey haze that was the
+   objection to shadows on the testimonial row. Tinted blue to match. */
+.situation-card:hover{
+  transform:translateY(-6px);
+  border-color: rgba(30,86,160,0.55);
+  box-shadow: var(--shadow-card-hover);
+}
+.situation-card:active{ transform:translateY(-2px); box-shadow: var(--shadow-card); }
+
+/* ---- Equal-height cards across a row ----
+   Symptom: "Divorce or Separation" rendered shorter than the two cards
+   beside it, because its description is one line where theirs are two.
+   min-height could not fix this -- it is a floor, so the two-line cards
+   simply grew past it (238px) while the one-line card sat on it (230px).
+
+   The columns were never the problem: Elementor already stretches those to
+   equal height (all three measured 258px). The break is one level in.
+   .elementor-widget-wrap is a flex container set to align-content:flex-start,
+   which packs its single line to the top at content height instead of
+   letting it fill, so the widget -- and the card inside it -- stops short of
+   the column it sits in.
+
+   Switching that to stretch, making the widget a flex parent, and giving
+   the card height:100% carries the column's height all the way down to the
+   card. Now equal heights come from the row itself and hold whatever the
+   copy does.
+   Applied to the Process row too: those cards have the same uneven copy
+   lengths and would show the same gap as soon as one description wrapped. */
+.elementor-element-64c13fa .elementor-widget-wrap,
+.elementor-element-b5fe42e .elementor-widget-wrap,
+.elementor-element-fcdbd88 .elementor-widget-wrap{
+  align-content: stretch;
+}
+.elementor-element-64c13fa .elementor-widget-html,
+.elementor-element-b5fe42e .elementor-widget-html,
+.elementor-element-fcdbd88 .elementor-widget-html{
+  display: flex;
+}
+.elementor-element-64c13fa .elementor-widget-html > .process-card,
+.elementor-element-b5fe42e .elementor-widget-html > .situation-card,
+.elementor-element-fcdbd88 .elementor-widget-html > .situation-card{
+  width: 100%;
+}
+/* The copper gradient rule across the card top stays off: it was a third
+   orange element per card, on top of the tile and the icon. */
+.situation-card .bar{ display:none; }
+.situation-card .badge{ width:54px; height:54px; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:22px; }
+.situation-card .badge svg{ width:28px; height:28px; }
+.situation-card h3{ font-family:'Newsreader', serif !important; font-size:23px; color:var(--navy); margin:0 0 12px 0; font-weight:600 !important; letter-spacing:-0.01em; }
+.situation-card p{ font-size:15px; line-height:1.65; color:#4a5160; margin:0; }
+/* All six cards describe equally-valid situations -- there's no real
+   grouping or hierarchy between them, so the copper/navy alternation was
+   arbitrary rather than meaningful, and it broke the single-accent rule
+   copper follows everywhere else on the page (buttons, kicker labels,
+   badges, dots). Both variants now render identically in copper; the
+   navy selector is kept so the markup doesn't need to change. */
+.situation-accent-copper .bar,
+.situation-accent-navy .bar{ background:linear-gradient(90deg,#D1853F,#E8C3A1); }
+/* Icon tiles moved off copper. Six copper-on-copper tiles stacked in one
+   view was the bulk of the "too orange" -- copper is meant to be an accent
+   here, and six tiles at once is not an accent. Blue matches the card
+   borders so the section reads as one system.
+   Note this is the one place blue is NOT carrying its "good outcome"
+   meaning; these are problem categories. It's a tinted container rather
+   than a claim, so it doesn't read as one, but it's worth knowing if blue
+   ever gets used more strictly. */
+.situation-accent-copper .badge,
+.situation-accent-navy .badge{ background:rgba(30,86,160,0.10); color:var(--blue); }
+
+/* ---------- Cost comparison calculator ----------
+   Client asked to replicate hannybuyshouses.ca's savings calculator: a
+   home-value slider drives a side-by-side comparison of traditional-sale
+   costs (realtor commission, closing costs, repairs, staging, holding
+   costs) against a cash-offer net, plus a savings/time-saved summary.
+   Same math/mechanism, this site's brand (navy/cream/copper, Newsreader +
+   Work Sans) and original wording instead of theirs. Logic lives in
+   reveal.js (vanilla JS, no framework on this site). */
+#calculator{ background: var(--cream) !important; }
+
+/* Hairline on the two white panels that sit directly on the (now white)
+   #calculator section -- without it they have no edge at all and read as
+   floating text. .calc-traditional already carried one; .calc-cash is navy
+   so it needs none. */
+.calc-card{
+  background:#FFFFFF; border-radius: var(--radius-panel); padding:40px;
+  border:1px solid var(--blue-line);
+  box-shadow: var(--shadow-card);
+  max-width:720px; margin:0 auto 32px; box-sizing:border-box;
+}
+.calc-value-head{ display:flex; align-items:flex-start; gap:16px; margin-bottom:20px; }
+.calc-value-icon{
+  width:52px; height:52px; border-radius:14px; flex:0 0 auto;
+  background:rgba(209,133,63,0.12); color:var(--copper);
+  display:flex; align-items:center; justify-content:center;
+}
+.calc-value-icon svg{ width:26px; height:26px; }
+.calc-value-head h3{
+  font-family:'Newsreader', serif; font-size:20px; font-weight:600; color:var(--navy); margin:0 0 4px 0;
+}
+.calc-value-head p{ font-size:14px; color:#5a6272; margin:0; }
+.calc-value-display{
+  font-family:'Newsreader', serif; font-size:42px; font-weight:600; color:var(--navy);
+  text-align:center; margin-bottom:18px;
+}
+.calc-slider{
+  -webkit-appearance:none; appearance:none; width:100%; height:8px; border-radius:999px;
+  background: linear-gradient(to right, var(--copper) 0%, var(--copper) var(--calc-fill, 27.8%), #E8E0D2 var(--calc-fill, 27.8%), #E8E0D2 100%);
+  outline:none; margin:8px 0 6px; cursor:pointer;
+}
+.calc-slider::-webkit-slider-thumb{
+  -webkit-appearance:none; width:24px; height:24px; border-radius:50%;
+  background:#FFFFFF; border:3px solid var(--copper); box-shadow:0 2px 8px rgba(7,19,55,0.28); cursor:pointer;
+}
+.calc-slider::-moz-range-thumb{
+  width:24px; height:24px; border-radius:50%; background:#FFFFFF; border:3px solid var(--copper);
+  box-shadow:0 2px 8px rgba(7,19,55,0.28); cursor:pointer;
+}
+.calc-slider::-moz-range-track{ height:8px; border-radius:999px; background:#E8E0D2; }
+.calc-slider::-moz-range-progress{ height:8px; border-radius:999px; background:var(--copper); }
+.calc-slider-range{ display:flex; justify-content:space-between; font-size:13px; color:#8b7355; }
+
+.calc-compare-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:24px;
+  max-width:960px; margin:0 auto 32px;
+}
+.calc-compare-card{
+  border-radius:20px; padding:32px; box-sizing:border-box; position:relative;
+}
+.calc-traditional{
+  background:#FFFFFF; border:1px solid var(--blue-line);
+  box-shadow: var(--shadow-card);
+}
+.calc-cash{
+  background:var(--navy); color:#F7F5F2;
+  box-shadow:0 8px 20px rgba(7,19,55,0.22), 0 24px 48px rgba(7,19,55,0.16);
+}
+.calc-badge{
+  position:absolute; top:20px; right:20px; background:var(--copper); color:#fff;
+  font-size:11px; font-weight:700; letter-spacing:0.06em; padding:6px 12px; border-radius:999px;
+}
+.calc-compare-head{ display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+.calc-compare-head svg{ width:20px; height:20px; flex:0 0 auto; }
+.calc-traditional .calc-compare-head svg{ color:#8b7355; }
+.calc-cash .calc-compare-head svg{ color:var(--copper-2); }
+.calc-compare-head h4{
+  font-family:'Newsreader', serif; font-size:19px; font-weight:600; margin:0;
+  color:var(--navy);
+}
+.calc-cash .calc-compare-head h4{ color:#F7F5F2; }
+.calc-line-items{ display:flex; flex-direction:column; gap:12px; margin-bottom:14px; }
+.calc-line{ display:flex; justify-content:space-between; align-items:baseline; font-size:14px; }
+.calc-traditional .calc-line > span:first-child{ color:#5a6272; }
+.calc-cash .calc-line > span:first-child{ color:rgba(247,245,242,0.72); }
+.calc-neg{ color:#a8474f; font-weight:500; }
+/* Positive figures live inside .calc-cash, which is navy, so these take the
+   on-dark green (7.5:1) rather than --green (2.6:1 there). */
+.calc-pos{ color:var(--blue-light); font-weight:600; }
+.calc-pos em{ font-style:italic; font-weight:400; opacity:0.85; font-size:13px; }
+.calc-check::before{ content:"\2713"; margin-right:6px; font-weight:700; }
+.calc-line-total{
+  border-top:1px solid rgba(7,19,55,0.1); padding-top:12px; margin-bottom:16px;
+  font-weight:600;
+}
+.calc-line-total > span:first-child{ color:var(--navy); }
+.calc-net-box{ border-radius:14px; padding:16px 18px; }
+.calc-net-light{ background:var(--cream); }
+.calc-net-dark{ background:rgba(255,255,255,0.08); }
+.calc-net-box .calc-line{ font-size:16px; margin-bottom:8px; }
+.calc-net-box .calc-line > span:first-child{ font-weight:600; }
+.calc-traditional .calc-net-box .calc-line > span:first-child{ color:var(--navy); }
+.calc-cash .calc-net-box .calc-line > span:first-child{ color:#F7F5F2; }
+.calc-net-amount{ font-family:'Newsreader', serif; font-size:22px; font-weight:600; }
+.calc-traditional .calc-net-amount{ color:var(--navy); }
+.calc-cash .calc-net-amount{ color:#F7F5F2; }
+.calc-days{ display:flex; align-items:center; gap:8px; font-size:13px; color:#8b7355; }
+.calc-days svg{ width:16px; height:16px; flex:0 0 auto; }
+/* .calc-days sits in both compare cards. The accent only ever marks the
+   cash-offer side, which is the navy card, so it takes the on-dark green. */
+.calc-days-accent{ color:var(--blue-light); font-weight:600; }
+
+.calc-summary{
+  background:#FFFFFF; border-radius: var(--radius-panel); padding:32px; max-width:960px; margin:0 auto 32px;
+  display:grid; grid-template-columns:1fr 1fr; gap:24px; box-sizing:border-box;
+  border:1px solid var(--blue-line);
+  box-shadow: var(--shadow-card);
+}
+.calc-stat{ text-align:center; background:var(--cream); border-radius:14px; padding:24px 16px; }
+.calc-stat svg{ width:28px; height:28px; color:var(--copper); margin-bottom:10px; }
+.calc-stat-value{ font-family:'Newsreader', serif; font-size:28px; font-weight:600; color:var(--navy); }
+.calc-stat p{ font-size:14px; color:#5a6272; margin:6px 0 0; }
+
+.calc-cta{ text-align:center; max-width:960px; margin:0 auto; }
+.calc-cta p{ font-size:16px; color:#5a6272; margin:0 0 18px; }
+.calc-cta-button{
+  display:inline-block; text-decoration:none; background:var(--copper); color:#fff;
+  padding:16px 34px; border-radius:999px; font-size:16px; font-weight:600;
+  font-family:'Work Sans', sans-serif; box-shadow:0 6px 16px rgba(209,133,63,0.3);
+  transition:transform .25s ease, box-shadow .25s ease, background .25s ease;
+}
+.calc-cta-button:hover{ background:var(--navy); transform:translateY(-2px); box-shadow:0 10px 22px rgba(209,133,63,0.38); }
+/* The rule above declares text-decoration:none, but Astra ships
+   ".entry-content a{text-decoration:underline}" which carries one more
+   class and wins on specificity, leaving the label underlined inside the
+   pill. The hero CTAs escape this only because their text-decoration is set
+   inline. */
+.calc-cta-button, .calc-cta-button:hover{ text-decoration: none !important; }
+
+@media (max-width:767px){
+  .calc-card, .calc-summary{ padding:24px; }
+  .calc-compare-grid{ grid-template-columns:1fr; }
+  .calc-summary{ grid-template-columns:1fr; }
+  .calc-value-display{ font-size:32px; }
+  /* The "THE EASIER PATH" badge is absolutely positioned top-right on
+     desktop, where the card is wide enough to clear the heading next to
+     it. On a narrow mobile card the heading wraps to fill more width and
+     the badge sits directly on top of it instead. Drop the absolute
+     positioning here -- it's the first element in the markup, so in
+     normal flow it just stacks above the heading instead of over it. */
+  .calc-badge{ position:static; display:inline-block; margin-bottom:14px; }
+}
+
+/* ---------- Traditional vs. Us comparison table ----------
+   Quick qualitative scan (timeline, commissions, repairs, showings,
+   closing costs, certainty) sitting above Reviews -- complements the Cost
+   Comparison calculator rather than duplicating it (that one's a dollar
+   breakdown you interact with; this is a glance-and-go summary). Reuses
+   the calc section's red/copper for no/yes so the two comparison-style
+   sections read as one family. */
+#compare-table{ background: #FFFFFF !important; }
+/* Hairline added because #compare-table is white now: a white table card on
+   a white section has only its shadow to separate the two, same problem the
+   calculator panels and testimonial cards already solve this way. */
+.compare-table-wrap{
+  max-width:960px; margin:0 auto; border-radius: var(--radius-panel); overflow:hidden;
+  border:1px solid var(--blue-line);
+  box-shadow: var(--shadow-card);
+  background:#FFFFFF;
+}
+/* margin-bottom:0 removes a white band under the last row.
+   Astra/WordPress style bare <table> with a bottom margin of 1.5em, which
+   resolved to 24px here. Because .compare-table-wrap has overflow:hidden
+   and a rounded border, that margin was drawn INSIDE the card -- an empty
+   white strip between the last row and the card's bottom edge, below the
+   tinted column so it looked like the column stopped short.
+   It is em-based, so it scaled with font-size and would not have been
+   caught by adjusting padding. */
+.compare-table{ width:100%; border-collapse:collapse; margin:0; }
+/* Header row: light, not a dark band and not a gradient.
+   The original navy -> copper sweep had to travel through the midpoint
+   between a blue and an orange, which is a desaturated brown -- so the
+   middle column ("Traditional") sat in a muddy band that read as a
+   rendering fault rather than a deliberate colour. Any navy-to-copper
+   gradient does this; it isn't a matter of picking better endpoints.
+   The header is now a soft greige with navy lettering, which keeps the
+   table consistent with a page that has no dark masses left in it apart
+   from the footer.
+   #F1EDE7 rather than --cream: the #compare-table section behind the card
+   is already --cream, and a header set to the same value reads as a gap
+   punched through the card rather than as a header band. This is a step
+   deeper, so it separates from both the white table body and the cream
+   section. */
+.compare-table thead tr{
+  /* Neutral-cool band. Was a warm greige, which fought the blue running
+     down the favourable column beneath it. */
+  background: #EFF2F6;
+}
+.compare-table thead th{
+  color: var(--navy); font-family:'Work Sans', sans-serif; font-weight:600; font-size:15px;
+  text-align:left; padding:20px 24px;
+  /* Inset shadow rather than border-bottom throughout this block -- a real
+     border would add to cell height and nudge the header text off-centre. */
+  box-shadow: inset 0 -1px 0 rgba(7,19,55,0.10);
+}
+
+/* The favourable column, marked two ways: a copper rule under its header
+   and a faint copper wash running the full height beneath it. */
+/* The favourable column is one continuous cool lane now: pale blue header
+   cell, blue rule under it, pale blue wash all the way down, blue values.
+   Previously the wash and the rule were copper while the values were blue,
+   so the column was warm and its own text was cool -- two temperature
+   families in one lane, which is why it read as mismatched rather than
+   deliberate. Warm still does the opposite job in this table: the
+   "Traditional" column keeps its muted red crosses. */
+.compare-table thead th:last-child{
+  background: #DFEAF6;
+  box-shadow: inset 0 -3px 0 var(--blue);
+}
+/* Opaque rather than rgba, so nothing behind it can band the column. */
+.compare-table tbody td:last-child{
+  background: #F4F9FE;
+}
+.compare-table thead th:not(.compare-th-feature){ text-align:center; }
+.compare-table tbody td{
+  padding:18px 24px; font-size:15px; font-family:'Work Sans', sans-serif;
+  border-bottom:1px solid rgba(7,19,55,0.09);
+}
+.compare-table tbody tr:last-child td{ border-bottom:none; }
+/* Zebra striping removed. With a tinted column and a tinted header the
+   table was carrying three separate background systems at once, and the
+   stripe was the one doing the least work -- three columns with clear row
+   dividers scan fine without it. The divider below is lifted slightly to
+   take over the row-tracking job. */
+.compare-feature{ font-weight:600; color:var(--navy); }
+.compare-no, .compare-yes{ text-align:center; }
+/* display:flex was previously set directly on the <td> -- some browsers
+   don't consistently keep a flex-display table cell participating in
+   normal table layout, which was making the "With Andres Properties"
+   column's content disappear entirely. Flexing an inner span instead
+   leaves the <td> itself as a plain table-cell. */
+.compare-inline{ display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.compare-no{ color:#a8474f; }
+/* Was --copper-2 at 2.69:1 against the column, which failed WCAG AA and was
+   flagged as the table's remaining weak spot. Green fixes the legibility and
+   carries the meaning at the same time: this column is the good outcome. */
+.compare-yes{ color:var(--blue); font-weight:600; }
+.compare-no svg, .compare-yes svg{ width:18px; height:18px; flex:0 0 auto; }
+
+/* Swipe hint + scroll-progress bar: hidden on desktop (table fits, no
+   scrolling needed), shown on mobile where the table scrolls horizontally
+   -- otherwise there's nothing telling a visitor more columns exist off
+   to the right. The thumb's width/position are driven by JS reading the
+   scroll container's actual scrollLeft/scrollWidth, not just decorative. */
+.compare-scroll-hint, .compare-scrollbar-track{ display:none; }
+
+@media (max-width:767px){
+  .compare-table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .compare-table{ min-width:640px; }
+  .compare-scroll-hint{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    font-size:13px; color:#8b7355; margin-top:12px;
+  }
+  .compare-scroll-hint svg{ width:16px; height:16px; flex:0 0 auto; }
+  .compare-scrollbar-track{
+    display:block; height:4px; border-radius:999px; background:rgba(7,19,55,0.08);
+    margin-top:10px; overflow:hidden;
+  }
+  .compare-scrollbar-thumb{
+    height:100%; width:40%; border-radius:999px; background:var(--copper);
+  }
+}
+
+/* ---------- Case study / meet-jason photo frame variant already covered by .framed-photo above ---------- */
+
+/* ---------- Reviews placeholder ---------- */
+.reviews-placeholder{
+  text-align:center; font-size:17px; color:#5a4a3a; font-style:italic;
+  font-family:'Newsreader', serif; padding: 20px 0;
+}
+.reviews-placeholder-note{
+  text-align:center; font-size:17px; color:#8b7355; font-style:italic;
+  font-family:'Work Sans', sans-serif; padding: 0 0 10px;
+}
+
+/* ---------- Reviews marquee (example content until real reviews arrive) ---------- */
+.marquee-mask{
+  overflow:hidden; position:relative; width:100%;
+  -webkit-mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.marquee-track{
+  display:flex; gap:24px; width:max-content;
+  animation: reviewScroll 40s linear infinite;
+  padding: 4px 0;
+}
+.marquee-mask:hover .marquee-track{ animation-play-state: paused; }
+@keyframes reviewScroll{
+  from{ transform: translateX(0); }
+  to{ transform: translateX(-50%); }
+}
+.testimonial-card{
+  /* Blue outline, no drop shadow.
+     These cards sit shoulder to shoulder in a marquee, so their shadows
+     overlapped into the narrow gaps between them and pooled there as grey
+     haze rather than reading as elevation on any individual card. Dropping
+     the shadow entirely removes that, and a blue hairline gives each card a
+     crisp edge that works whether the row is moving or paused. */
+  flex: 0 0 auto; width: 300px; background:#FFFFFF; padding:30px 26px;
+  border-radius: var(--radius-card); border:1.5px solid var(--blue-line);
+  box-shadow: var(--shadow-card);
+  position:relative;
+}
+.testimonial-card .quote-mark{
+  font-family:'Newsreader', serif; font-size:50px; color:var(--tan); line-height:1;
+  position:absolute; top:14px; right:22px;
+}
+.testimonial-card p{
+  font-size:15px; line-height:1.6; color:#3d4451; margin:0 0 20px 0; position:relative; z-index:1;
+}
+.testimonial-attribution{ display:flex; align-items:center; gap:12px; }
+.testimonial-attribution .avatar{
+  width:36px; height:36px; border-radius:50%; background:var(--navy); color:var(--cream);
+  font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center;
+  font-family:'Newsreader', serif;
+}
+.testimonial-attribution .testimonial-name{ font-size:13px; font-weight:600; color:var(--navy); }
+@media (max-width: 767px){
+  .testimonial-card{ width: 260px; }
+}
+
+/* ---------- Decorative (non-functional) contact form ---------- */
+.decorative-form{ display:flex; flex-direction:column; gap:16px; text-align:left; max-width:520px; margin:0 auto; }
+/* Fields were a darker navy well (#0e1a3c) inset into the navy #contact
+   section. On the warm tint that background is darker than everything
+   around it and reads as the only heavy element on the page, so the fill
+   flips to white with a navy hairline. A focus ring is added because on a
+   light section the old "field is the dark bit" affordance is gone --
+   without it there's nothing marking which field is active. */
+.decorative-form input, .decorative-form textarea{
+  padding:16px; border-radius:2px; border:1px solid rgba(7,19,55,0.18); background:#FFFFFF; color:var(--navy);
+  font-size:15px; font-family:'Work Sans', sans-serif; width:100%;
+}
+.decorative-form input::placeholder, .decorative-form textarea::placeholder{ color:#8B92A0; }
+.decorative-form input:focus, .decorative-form textarea:focus{
+  outline:none; border-color:var(--copper); box-shadow:0 0 0 3px rgba(209,133,63,0.16);
+}
+.decorative-form textarea{ resize:vertical; }
+.decorative-form button{
+  background: var(--copper); color:#fff; border:none; padding:17px; border-radius:999px;
+  font-size:16px; font-weight:600; cursor:pointer; margin-top:8px; font-family:'Work Sans', sans-serif;
+  box-shadow:0 6px 16px rgba(209,133,63,0.32); transition:transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.decorative-form button:hover{ background:#D38F4E; transform:translateY(-3px); box-shadow:0 12px 26px rgba(209,133,63,0.45); }
+
+/* ---------- Buttons (site-wide) ---------- */
+.elementor-button{
+  border-radius: 999px !important;
+  box-shadow: 0 6px 16px rgba(209,133,63,0.28);
+  transition: transform .25s ease, box-shadow .25s ease, background-color .25s ease !important;
+}
+.elementor-button:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(209,133,63,0.36);
+}
+
+/* ---------- Accordion (FAQ) ---------- */
+.elementor-accordion-item{
+  border: none !important;
+  border-bottom: 1px solid var(--tan) !important;
+  border-radius: 0 !important;
+  margin-bottom: 0;
+  background: transparent;
+}
+.elementor-tab-title{
+  padding: 22px 0 !important;
+  font-weight: 600;
+}
+.elementor-tab-content{
+  padding: 0 0 22px 0 !important;
+}
+
+/* ---------- Light theme: text inversion on the four ex-navy sections ----------
+   Everything below re-colours copy that was white/cream because it sat on
+   navy. Two reasons every rule here needs !important:
+
+     1) Per-widget colours live in Elementor's own generated stylesheet
+        (uploads/elementor/css/post-6.css), which is enqueued *after* this
+        file -- so it wins on source order no matter how specific we get.
+        It sets no !important of its own, so ours takes it cleanly.
+     2) The hero <h1>, the hero's secondary CTA and the Meet Jason pull
+        quote are raw HTML widgets with colours set as inline style
+        attributes, which only !important can override at all.
+
+   Doing it here rather than rewriting _elementor_data means no database
+   edit and no risk to the page structure -- reverting the whole light
+   theme is a matter of restoring this one file. The trade-off is that the
+   Elementor editor will still *show* the old white swatches on these
+   widgets; the front end is what's authoritative. */
+
+/* Sticky header edge -- always on, at rest as well as scrolled.
+   The header and the hero are the same --cream, so this hairline plus its
+   soft shadow is the only thing dividing them; without it the two merge
+   into one undifferentiated block. It doubles as the edge the header needs
+   while it floats over the sections further down the page.
+
+   (An earlier version only revealed this once scrolled, via a .is-scrolled
+   class toggled from reveal.js. That's since been removed from both files
+   -- the edge is unconditional now, so there is nothing left to toggle.)
+
+   Astra also ships its own 1px #D1D5DB border on .ast-primary-header-bar.
+   That one is a flat grey that reads as a stray browser default against
+   the cream; it's removed so this navy-tinted rule is the single source of
+   the header's bottom edge rather than the two stacking up. */
+.site-header .ast-primary-header-bar,
+.ast-primary-header-bar{ border-bottom: none !important; }
+#masthead{
+  border-bottom:1px solid rgba(7,19,55,0.08);
+  box-shadow: 0 6px 18px rgba(7,19,55,0.05);
+}
+
+/* Hero: h1 + italic emphasis (inline styles) */
+#home h1{ color: var(--navy) !important; }
+
+/* The emphasis word takes a warm gradient, which is rankandfound's
+   signature move -- their hero italicises "AI search" and fills it with a
+   clipped linear-gradient. Same technique, this brand's colours: copper
+   deepening to amber rather than their blue-to-teal.
+   Guarded by @supports because the fill depends on background-clip:text.
+   Without the guard, a browser that ignores the clip but honours
+   color:transparent renders the word invisible. The solid --copper-display
+   above stays the fallback, so unsupported browsers get the flat colour
+   this had before rather than nothing. */
+#home h1 em{ color: var(--copper-display) !important; }
+@supports ((-webkit-background-clip: text) or (background-clip: text)){
+  #home h1 em{
+    background: linear-gradient(100deg, #A9611F 0%, var(--copper-display) 55%, #D89A4E 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    /* Italic descenders in "stress" would clip against the gradient box. */
+    padding-bottom: 0.06em;
+  }
+}
+
+/* Hero CTA pair. Both are raw HTML widgets with their colours set inline,
+   so every property being changed needs !important.
+
+   The hierarchy is now solid-dark primary / light secondary, rather than
+   the previous copper-fill / copper-outline pair where the two buttons
+   carried the same weight and competed with each other. */
+
+/* Primary -- solid navy. White on navy is 18:1, the strongest contrast
+   anywhere on the page, which suits the one action the page is built
+   around. Shadow retinted from copper to navy to match the new fill. */
+#home a[href*="#contact"]{
+  background: var(--navy) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 16px rgba(7,19,55,0.24) !important;
+}
+
+/* Secondary -- light. White fill with a navy hairline and navy label, so it
+   reads as the quieter of the two next to the solid navy primary. The
+   inline border is 2.5px copper; it's thinned as well as recoloured,
+   because a heavy border fights the "secondary" role. */
+#home a[href^="tel:"]{
+  background: #FFFFFF !important;
+  color: var(--navy) !important;
+  border: 1.5px solid rgba(7,19,55,0.18) !important;
+  box-shadow: 0 4px 12px rgba(7,19,55,0.08) !important;
+}
+
+/* Hero: subtext (Elementor text-editor widget) */
+.elementor-element-9b3654b{ color: var(--ink-body) !important; }
+
+/* Meet Jason: heading, body copy, pull quote (last one is inline) */
+.elementor-element-b0fc520 .elementor-heading-title{ color: var(--navy) !important; }
+.elementor-element-da760bb{ color: var(--ink-body) !important; }
+.elementor-element-6c30343 > div{ color: var(--navy) !important; }
+
+/* Case study: heading + two body paragraphs */
+.elementor-element-2e9b5c2 .elementor-heading-title{ color: var(--navy) !important; }
+.elementor-element-258e692,
+.elementor-element-74a125b{ color: var(--ink-body) !important; }
+
+/* Contact: heading + subtext */
+.elementor-element-85168a0 .elementor-heading-title{ color: var(--navy) !important; }
+.elementor-element-a4fa44d{ color: var(--ink-body) !important; }
+
+/* ---------- Editorial pass: eyebrow cull + one heading scale ----------
+
+   1) EYEBROWS. Nine of the fifteen sections opened with a copper uppercase
+   kicker, and most only restated the headline directly beneath them
+   ("REVIEWS" over "What homeowners say.", "FAQ" over "Common questions.",
+   "THE COMPARISON" over "Traditional Sale vs. Selling to Us"). A label
+   that repeats the next line isn't information, it's texture, and
+   repeating it nine times is what makes a page read as templated.
+
+   Two are kept, because they each say something the headline does not:
+     119f3c3  "Winnipeg & Surrounding Areas"  -- qualifies the service area
+     a764099  "A Real Seller Scenario"        -- flags the case study as
+              illustrative rather than a specific named client, which is
+              worth keeping for accuracy as well as design
+
+   Hidden rather than deleted from Elementor: no DB edit, and restoring any
+   one of them is a matter of removing its id from this list. The widget's
+   own wrapper is targeted (not the .kicker inside it) so the wrapper's
+   margin collapses too, otherwise each section keeps a phantom gap where
+   the label used to be. */
+.elementor-element-a3c499d,   /* Simple 3-Step Process */
+.elementor-element-33409e8,   /* Meet Jason */
+.elementor-element-cLc0kick,  /* Cost Comparison */
+.elementor-element-fae08c3,   /* Situations We Help With */
+.elementor-element-cmp0kick,  /* The Comparison */
+.elementor-element-2fb9183,   /* Reviews */
+.elementor-element-7a29fc6{   /* FAQ */
+  display: none !important;
+}
+
+/* 2) HEADING SCALE. The nine section headings were set individually in
+   Elementor at 36 / 38 / 42 / 42 / 42 / 48 / 48 / 50px. Sizes two pixels
+   apart don't read as hierarchy, they read as nobody deciding -- and
+   near-miss inconsistency is most of what separates "expensive" from
+   "built quickly". One value now covers all of them; the hero keeps its
+   own larger size so the page still has a clear top note.
+   clamp() rather than a fixed px + media query so the scale is continuous
+   between the mobile floor and the desktop cap. */
+section.elementor-top-section .elementor-heading-title{
+  font-size: clamp(30px, 3.4vw, 44px) !important;
+  line-height: 1.15;
+  /* Colour has to be forced here too, not just sized.
+     Six of the section headings carry an explicit #071337 from Elementor's
+     own generated stylesheet, while the four this file already overrode
+     moved to the softened --navy -- so the page was rendering headings in
+     two different navies at once, which reads as a bug rather than a
+     palette. One rule now owns every section heading. */
+  color: var(--navy) !important;
+}
+
+/* Same problem one level down: only the five text-editor widgets that used
+   to sit on navy were being recoloured by this file. Every other paragraph
+   still inherited Elementor's own #7A7A7A, a cool grey, so warming
+   --ink-body was only reaching a third of the body copy on the page (and
+   #7A7A7A measured 4.29:1, marginal for body text). This covers the rest. */
+section.elementor-top-section .elementor-widget-text-editor,
+section.elementor-top-section .elementor-widget-text-editor p{
+  color: var(--ink-body) !important;
+}
+
+/* The FAQ accordion was set to #334155, a cool slate that belongs to no
+   part of this palette, with #4A4A4A body beneath it. */
+.elementor-accordion .elementor-tab-title,
+.elementor-accordion .elementor-tab-title a{ color: var(--navy) !important; }
+.elementor-accordion .elementor-tab-content{ color: var(--ink-body) !important; }
+
+/* ---- FAQ font: the one place on the page that wasn't a brand typeface ----
+   The accordion was rendering in Roboto while every other element was
+   Work Sans or Newsreader. Elementor's accordion widget declares
+     font-family: var(--e-global-typography-primary-font-family), Sans-serif
+   and that global typography variable is unset on this install, so the
+   declaration collapses to the generic `Sans-serif` keyword and the browser
+   substitutes its own default. The blanket `body, p, li, a` font rule at the
+   top of this file never wins because Elementor's stylesheet is enqueued
+   after it, hence !important.
+   Work Sans rather than Newsreader deliberately: these are interactive rows,
+   not headings. The serif belongs to "Common questions." above them, which
+   keeps the hierarchy legible. */
+.elementor-widget-accordion .elementor-tab-title,
+.elementor-widget-accordion .elementor-tab-title a,
+.elementor-accordion .elementor-accordion-title,
+.elementor-widget-accordion .elementor-tab-content,
+.elementor-widget-accordion .elementor-tab-content p{
+  font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+/* Astra's .entry-content a underline again -- the same rule that was
+   underlining the calculator CTA. On the accordion it made a list of
+   headings read as a list of links. The +/- icon and the pointer cursor are
+   the affordance; the underline was noise. */
+.elementor-accordion .elementor-tab-title,
+.elementor-accordion .elementor-tab-title a,
+.elementor-accordion .elementor-accordion-title{ text-decoration: none !important; }
+.elementor-accordion .elementor-tab-title:hover .elementor-accordion-title{ color: var(--blue) !important; }
+
+/* ---------- Scroll reveal ---------- */
+.reveal-up{
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .9s cubic-bezier(.2,.65,.3,1), transform .9s cubic-bezier(.2,.65,.3,1);
+}
+.reveal-up.is-visible{
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-scale{
+  opacity: 0;
+  transform: translateY(24px) scale(0.94);
+  transition: opacity .6s ease, transform .6s cubic-bezier(.34,1.56,.64,1);
+}
+.reveal-scale.is-visible{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+/* Staggered load-in for grouped cards (process steps 1/2/3) so they
+   animate in sequentially rather than all at once. */
+.reveal-scale.stagger-1{ transition-delay: 0s !important; }
+.reveal-scale.stagger-2{ transition-delay: .22s !important; }
+.reveal-scale.stagger-3{ transition-delay: .44s !important; }
+
+/* ---------- Mobile fixes ---------- */
+@media (max-width: 767px){
+  /* The desktop fix for .framed-photo img (max-width:none, needed to stop a
+     flex/percentage-width collapse bug) breaks mobile by holding photos at
+     their fixed 360-480px desktop width, overflowing a 390px viewport and
+     pushing a horizontal scrollbar that clips text on every section. */
+  .framed-photo{ width: 100% !important; max-width: 420px; margin-left: auto; margin-right: auto; }
+  .framed-photo img{ max-width: 100% !important; width: 100% !important; height: auto !important; }
+  /* Previously hidden outright here because the old fixed desktop offset
+     (top:24px/left:-24px) was sized for the old fixed-width image and
+     overflowed a 390px viewport. Now that .framed-photo itself is capped
+     to 100%/420px above, a smaller offset fits safely within the section's
+     24px side padding instead of needing to disappear. */
+  .framed-photo::before{ top: 8px; left: -8px; }
+  /* Card flows below the image on mobile (position:static) instead of the
+     desktop absolute overlap. The old -20px pull-up exceeded the card's
+     own 10px top padding, so it cut across the "Jason Andres" name line
+     instead of just tucking under the image corner. A small positive gap
+     avoids clipping the text entirely. */
+  .photo-caption-card{ position: static; margin-top: 12px; margin-left: 16px; display: inline-block; }
+
+  body{ overflow-x: hidden; }
+  .elementor-section{ padding-left: 24px !important; padding-right: 24px !important; }
+  .hero-anim-host{ margin: 0 auto; }
+
+  /* Footer, widget 2: "Quick Links" and "Contact" are two divs in one
+     flex row with gap:60px (set inline on the widget markup), sized for
+     side-by-side desktop spacing. On mobile flex-wrap drops them onto
+     separate lines, turning that same 60px into an oversized vertical gap
+     between the two stacked blocks. Also tightens the gap between the
+     logo/tagline widget and this one, which compounds with the theme's
+     own widget margin to read as uneven on a single narrow column. */
+  .site-footer-primary-section-2 .textwidget > div{ gap: 28px !important; }
+  .site-footer .ast-builder-footer-grid-columns{ row-gap: 28px; }
+}

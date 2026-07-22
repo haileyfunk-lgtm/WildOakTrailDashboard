@@ -1,0 +1,58 @@
+{
+  "id": "d083681",
+  "elType": "section",
+  "settings": {
+    "background_color": "#F7F5F2",
+    "padding": {
+      "unit": "px",
+      "top": "100",
+      "right": "40",
+      "bottom": "20",
+      "left": "40"
+    },
+    "background_background": "classic",
+    "layout": "full_width",
+    "_element_id": "process"
+  },
+  "elements": [
+    {
+      "id": "72a89fc",
+      "elType": "column",
+      "settings": {
+        "_column_size": 100
+      },
+      "elements": [
+        {
+          "id": "a3c499d",
+          "elType": "widget",
+          "widgetType": "html",
+          "settings": {
+            "html": "<div class=\"kicker\">Simple 3-Step Process</div>",
+            "_css_classes": "reveal-up"
+          },
+          "elements": []
+        },
+        {
+          "id": "fc3a3cb",
+          "elType": "widget",
+          "widgetType": "heading",
+          "settings": {
+            "title": "Easy to understand, easy on you.",
+            "header_size": "h2",
+            "align": "center",
+            "title_color": "#071337",
+            "typography_font_size": {
+              "unit": "px",
+              "size": 48
+            },
+            "typography_typography": "custom",
+            "_css_classes": "reveal-up"
+          },
+          "elements": []
+        }
+      ],
+      "isInner": false
+    }
+  ],
+  "isInner": false
+}

@@ -1,0 +1,79 @@
+{
+  "id": "64c13fa",
+  "elType": "section",
+  "settings": {
+    "background_color": "#F7F5F2",
+    "padding": {
+      "unit": "px",
+      "top": "20",
+      "right": "40",
+      "bottom": "100",
+      "left": "40"
+    },
+    "background_background": "classic",
+    "layout": "full_width"
+  },
+  "elements": [
+    {
+      "id": "2b4e395",
+      "elType": "column",
+      "settings": {
+        "_column_size": 33
+      },
+      "elements": [
+        {
+          "id": "b79569b",
+          "elType": "widget",
+          "widgetType": "html",
+          "settings": {
+            "html": "<div class=\"process-card process-card-1\">\n  <span class=\"process-ghost-num\" aria-hidden=\"true\">1</span>\n  <span class=\"process-rail-marker\" aria-hidden=\"true\"><span class=\"process-rail-marker-dot\"></span></span>\n  <h3>Tell us about the property</h3>\n  <p>Share a few details about your home and situation.</p>\n</div>",
+            "_css_classes": "reveal-scale stagger-1"
+          },
+          "elements": []
+        }
+      ],
+      "isInner": false
+    },
+    {
+      "id": "48c44ee",
+      "elType": "column",
+      "settings": {
+        "_column_size": 33
+      },
+      "elements": [
+        {
+          "id": "f478935",
+          "elType": "widget",
+          "widgetType": "html",
+          "settings": {
+            "html": "<div class=\"process-card process-card-2\">\n  <span class=\"process-ghost-num\" aria-hidden=\"true\">2</span>\n  <span class=\"process-rail-marker\" aria-hidden=\"true\"><span class=\"process-rail-marker-dot\"></span></span>\n  <h3>Get a no-pressure cash offer</h3>\n  <p>We review it and give you a straightforward offer.</p>\n</div>",
+            "_css_classes": "reveal-scale stagger-2"
+          },
+          "elements": []
+        }
+      ],
+      "isInner": false
+    },
+    {
+      "id": "a3777cb",
+      "elType": "column",
+      "settings": {
+        "_column_size": 33
+      },
+      "elements": [
+        {
+          "id": "e4e5fed",
+          "elType": "widget",
+          "widgetType": "html",
+          "settings": {
+            "html": "<div class=\"process-card process-card-3\">\n  <span class=\"process-ghost-num\" aria-hidden=\"true\">3</span>\n  <span class=\"process-rail-marker\" aria-hidden=\"true\"><span class=\"process-rail-marker-dot\"></span></span>\n  <h3>Close when it works for you</h3>\n  <p>Pick a timeline that fits your life.</p>\n</div>",
+            "_css_classes": "reveal-scale stagger-3"
+          },
+          "elements": []
+        }
+      ],
+      "isInner": false
+    }
+  ],
+  "isInner": false
+}
